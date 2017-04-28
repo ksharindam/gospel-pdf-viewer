@@ -1,0 +1,15 @@
+<RCC>
+  <qresource>
+    <file>open.png</file>
+    <file>save.png</file>
+    <file>quit.png</file>
+    <file>zoomin.png</file>
+    <file>zoomout.png</file>
+    <file>prev.png</file>
+    <file>next.png</file>
+    <file>go-first.png</file>
+    <file>go-last.png</file>
+    <file>goto.png</file>
+    <file>copy.png</file>
+  </qresource>
+</RCC>
