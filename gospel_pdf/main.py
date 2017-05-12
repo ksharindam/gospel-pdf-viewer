@@ -569,8 +569,8 @@ class PageWidget(QLabel):
 def main():
     app = QApplication(sys.argv)
     win = Main()
-    if len(sys.argv)==2 and path.exists(sys.argv[-1]):
-        win.loadPDFfile(QtCore.QString.fromUtf8(path.expanduser(sys.argv[-1])))
+    if len(sys.argv)>1 and path.exists(path.abspath(sys.argv[-1])):
+        win.loadPDFfile(QtCore.QString.fromUtf8(path.abspath(sys.argv[-1])))
     app.aboutToQuit.connect(win.onAppQuit)
     sys.exit(app.exec_())
 

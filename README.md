@@ -22,11 +22,11 @@ Download it [here](https://github.com/ksharindam/gospel-pdf-viewer/releases)
 ### Usage
 To run after installing, type command..  
   `gospel-pdf`  
-Or
-  `gospel-pdf filename.pdf`
+Or  
+  `gospel-pdf filename.pdf`  
 If you want to run this program without/before installing, then  
 Open terminal and change directory to gospel-pdf-viewer-master and run  
   `./run.sh`  
-Or
+Or  
   `./run.sh filename.pdf`  
 
