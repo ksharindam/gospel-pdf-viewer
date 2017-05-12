@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'files/main_window.ui'
 #
-# Created: Fri Apr 28 13:49:37 2017
+# Created: Fri Apr 28 22:46:17 2017
 #      by: PyQt4 UI code generator 4.11.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -82,9 +82,9 @@ class Ui_window(object):
         QtCore.QMetaObject.connectSlotsByName(window)
 
     def retranslateUi(self, window):
-        window.setWindowTitle(_translate("window", "Brick Reader", None))
-        self.menuFile.setTitle(_translate("window", "File", None))
+        window.setWindowTitle(_translate("window", "Gospel PDF", None))
+        self.menuFile.setTitle(_translate("window", "&File", None))
         self.menuNavigate.setTitle(_translate("window", "Navigate", None))
-        self.menuView.setTitle(_translate("window", "View", None))
+        self.menuView.setTitle(_translate("window", "&View", None))
         self.toolBar.setWindowTitle(_translate("window", "toolBar", None))
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 from setuptools import setup
+from gospel_pdf import __version__
 
 setup(
       name='gospel-pdf',
-      version='1.2',
+      version=__version__,
       description='Poppler based fast PDF Viewer written in PyQt4',
       long_description='''To run it you need PyQt4 and popplerqt4 module.  
 Install python-qt4 and python-poppler-qt4 (for PyQt4 and popplerqt4 module) in debian based distros''',
