@@ -118,6 +118,7 @@ class Main(QMainWindow, Ui_window):
         self.menuNavigate.addAction(self.nextPageAction)
         # Create widgets for menubar / toolbar
         self.totalPagesLabel = QLabel(self)
+        self.totalPagesLabel.setMinimumWidth(100)
         self.menubar.setCornerWidget(self.totalPagesLabel)
         self.gotoPageEdit = QLineEdit(self)
         self.gotoPageEdit.setPlaceholderText("Jump to page...")
