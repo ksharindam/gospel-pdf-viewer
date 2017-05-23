@@ -23,10 +23,10 @@ class Renderer(QtCore.QObject):
     rendered = QtCore.pyqtSignal(int, QImage)
     textFound = QtCore.pyqtSignal(int, QtCore.QRectF)
 
-    def __init__(self):
+    def __init__(self, render_even_pages=True):
         QtCore.QObject.__init__(self)
         self.doc = None
-        self.render_even_pages = True
+        self.render_even_pages = render_even_pages
         self.painter = QPainter()
         self.link_color = QColor(0,0,127, 40)
 
@@ -206,9 +206,8 @@ class Main(QMainWindow, Ui_window):
         self.renderer1.textFound.connect(self.onTextFound)
         self.thread1.start()
         self.thread2 = QtCore.QThread(self)
-        self.renderer2 = Renderer()
+        self.renderer2 = Renderer(False)
         self.renderer2.moveToThread(self.thread2)
-        self.renderer2.render_even_pages = False
         self.renderRequested.connect(self.renderer2.render)
         self.loadFileRequested.connect(self.renderer2.loadDocument)
         self.renderer2.rendered.connect(self.setRenderedImage)
@@ -371,10 +370,10 @@ class Main(QMainWindow, Ui_window):
         global dpi
         for i in range(self.total_pages):
             if self.zoomLevelCombo.currentIndex() == 0:
-                DPI = 72.0*self.fixed_width/self.doc.page(i).pageSize().width()
+                DPI = 72.0*self.fixed_width/self.doc.page(i).pageSizeF().width()
             else: DPI = dpi
             self.pages[i].dpi = DPI
-            self.pages[i].setFixedSize(self.doc.page(i).pageSize().width()*DPI/72.0, self.doc.page(i).pageSize().height()*DPI/72.0)
+            self.pages[i].setFixedSize(self.doc.page(i).pageSizeF().width()*DPI/72.0, self.doc.page(i).pageSizeF().height()*DPI/72.0)
         for page_no in self.rendered_pages:
             self.pages[page_no].clear()
 
@@ -591,11 +590,8 @@ class PageWidget(QLabel):
         self.setFrameShape(QFrame.StyledPanel)
         self.link_areas = []
         self.link_annots = []
-        self.annots_listed = False
-        self.copy_text_mode = False
-        self.click_point = None
+        self.annots_listed, self.copy_text_mode, self.click_point, self.highlight_area = False, False, None, None
         self.image = QPixmap()
-        self.highlight_area = None
 
     def setPageData(self, page_no, pixmap, page):
         self.image = pixmap

@@ -11,6 +11,7 @@ This is a evince or qpdfview alternative for linux users.
 To Install this program open terminal inside gospel-pdf-viewer-master directory.  
 And then run following command..  
 `sudo pip install .`  
+Gospel PDF will be automatically added to application menu.
 
 To uninstall run..  
 `sudo pip uninstall gospel-pdf`

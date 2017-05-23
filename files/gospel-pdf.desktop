@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Gospel PDF
+Comment=PopplerQt4 based PDF Reader
+Exec=gospel-pdf %f
+Icon=x-office-pdf
+Categories= Office;
+Terminal=false
+StartupNotify=false
