@@ -7,7 +7,7 @@ from subprocess import Popen
 from PyQt4 import QtCore
 from PyQt4.QtGui import QApplication, QMainWindow, QPixmap, QImage, QWidget, QFrame, QVBoxLayout, QLabel
 from PyQt4.QtGui import QFileDialog, QInputDialog, QAction, QIcon, QLineEdit, QStandardItem, QStandardItemModel
-from PyQt4.QtGui import QIntValidator, QComboBox, QPainter, QBrush, QPen, QColor, QMessageBox
+from PyQt4.QtGui import QIntValidator, QComboBox, QPainter, QColor, QMessageBox
 #from PyQt4.QtGui import QDesktopServices
 from popplerqt4 import Poppler
 import resources
@@ -21,14 +21,14 @@ HOMEDIR = environ["HOME"]
 
 class Renderer(QtCore.QObject):
     rendered = QtCore.pyqtSignal(int, QImage)
+    textFound = QtCore.pyqtSignal(int, QtCore.QRectF)
 
     def __init__(self):
         QtCore.QObject.__init__(self)
         self.doc = None
         self.render_even_pages = True
         self.painter = QPainter()
-        self.link_brush = QBrush(QColor(0,0,127, 40))
-        self.link_pen = QPen(QColor(0,0,127, 40))
+        self.link_color = QColor(0,0,127, 40)
 
     def render(self, page_no, dpi):
         """ render(int, float)
@@ -42,13 +42,11 @@ class Renderer(QtCore.QObject):
         # Add Heighlight over Link Annotation
         self.painter.begin(img)
         annots = page.annotations()
-        self.painter.setBrush(self.link_brush)
-        self.painter.setPen(self.link_pen)
         for annot in annots:
           if annot.subType() == Poppler.Annotation.ALink:
             x, y = annot.boundary().left()*img.width(), annot.boundary().top()*img.height()-1
             w, h = annot.boundary().width()*img.width()-1, annot.boundary().height()*img.height()-1
-            self.painter.drawRect(x, y, w, h)
+            self.painter.fillRect(x, y, w, h, self.link_color)
         self.painter.end()
         self.rendered.emit(page_no, img)
 
@@ -56,17 +54,44 @@ class Renderer(QtCore.QObject):
         """ loadDocument(str)
         Main thread uses this slot to load document for rendering """
         self.doc = Poppler.Document.load(filename, password, password)
-        self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting | Poppler.Document.Antialiasing)
+        self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
+                               Poppler.Document.Antialiasing | 0x00000020 )
+
+    def findText(self, text, page_num, area, find_reverse):
+        if find_reverse:
+          pages = range(page_num+1)
+          pages.reverse()
+          for page_no in pages:
+            page = self.doc.page(page_no)
+            found = page.search(text, area, Poppler.Page.PreviousResult, Poppler.Page.CaseInsensitive )
+            if found:
+              self.textFound.emit(page_no, area)
+              break
+            area = QtCore.QRectF(page.pageSizeF().width(), page.pageSizeF().height(),0,0) if find_reverse else QtCore.QRectF()
+        else:
+          pages = range(page_num, self.doc.numPages())
+          for page_no in pages:
+            page = self.doc.page(page_no)
+            found = page.search(text, area, Poppler.Page.NextResult, Poppler.Page.CaseInsensitive )
+            if found:
+              self.textFound.emit(page_no, area)
+              break
+            area = QtCore.QRectF()
 
 #class Main(main_ui[0], main_ui[1]):
 class Main(QMainWindow, Ui_window):
     renderRequested = QtCore.pyqtSignal(int, float)
     loadFileRequested = QtCore.pyqtSignal(unicode, QtCore.QByteArray)
+    findTextRequested = QtCore.pyqtSignal(str, int, QtCore.QRectF, bool)
 
     def __init__(self, parent=None):
         super(Main, self).__init__(parent)
         self.setupUi(self)
+        self.dockSearch.hide()
+        self.dockWidget.hide()
         self.dockWidget.setMinimumWidth(310)
+        self.findTextEdit.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.findCloseButton.setIcon(QIcon(':/close.png'))
         self.treeView.setAlternatingRowColors(True)
         self.treeView.clicked.connect(self.onOutlineClick)
         self.first_document = True
@@ -109,6 +134,9 @@ class Main(QMainWindow, Ui_window):
         self.copyTextAction = QAction(QIcon(":/copy.png"), "Copy Text", self)
         self.copyTextAction.setCheckable(True)
         self.copyTextAction.triggered.connect(self.toggleCopyText)
+        self.findTextAction = QAction(QIcon(":/search.png"), "Find Text", self)
+        self.findTextAction.setShortcut('Ctrl+F')
+        self.findTextAction.triggered.connect(self.dockSearch.show)
         # Create menu actions
         self.menuFile.addAction(self.openFileAction)
         self.menuFile.addAction(self.quitAction)
@@ -154,6 +182,7 @@ class Main(QMainWindow, Ui_window):
         self.toolBar.addAction(self.gotoPageAction)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.copyTextAction)
+        self.toolBar.addAction(self.findTextAction)
         self.toolBar.addWidget(spacer)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.quitAction)
@@ -161,25 +190,34 @@ class Main(QMainWindow, Ui_window):
         # Connect Signals
         self.scrollArea.verticalScrollBar().valueChanged.connect(self.onMouseScroll)
         self.scrollArea.verticalScrollBar().sliderReleased.connect(self.onSliderRelease)
+        self.findTextEdit.returnPressed.connect(self.findNext)
+        self.findNextButton.clicked.connect(self.findNext)
+        self.findBackButton.clicked.connect(self.findBack)
+        self.findCloseButton.clicked.connect(self.dockSearch.hide)
+        self.dockSearch.visibilityChanged.connect(self.toggleFindMode)
         # Create separate thread and move renderer to it
         self.thread1 = QtCore.QThread(self)
         self.renderer1 = Renderer()
-        self.renderer1.moveToThread(self.thread1)
+        self.renderer1.moveToThread(self.thread1) # this must be moved before connecting signals
         self.renderRequested.connect(self.renderer1.render)
         self.loadFileRequested.connect(self.renderer1.loadDocument)
+        self.findTextRequested.connect(self.renderer1.findText)
         self.renderer1.rendered.connect(self.setRenderedImage)
+        self.renderer1.textFound.connect(self.onTextFound)
         self.thread1.start()
         self.thread2 = QtCore.QThread(self)
         self.renderer2 = Renderer()
-        self.renderer2.render_even_pages = False
         self.renderer2.moveToThread(self.thread2)
+        self.renderer2.render_even_pages = False
         self.renderRequested.connect(self.renderer2.render)
         self.loadFileRequested.connect(self.renderer2.loadDocument)
         self.renderer2.rendered.connect(self.setRenderedImage)
         self.thread2.start()
+        # Show Window
+        self.show()
+        # Initialize Variables
         self.pages = []
         self.filename = None
-        self.show()
 
     def removeOldDoc(self):
         # Save current page number
@@ -270,7 +308,7 @@ class Main(QMainWindow, Ui_window):
         requested = 0
         for page_no in range(self.current_page, self.current_page+self.max_preload):
             if page_no not in self.rendered_pages and page_no < self.total_pages:
-                dpi = self.pages[page_no].dpi
+                #dpi = self.pages[page_no].dpi
                 self.renderRequested.emit(page_no, self.pages[page_no].dpi)
                 self.rendered_pages.append(page_no)
                 self.pages[page_no].jumpToRequested.connect(self.jumpToPage)
@@ -372,11 +410,62 @@ class Main(QMainWindow, Ui_window):
         scrolbar_pos = self.pages[self.current_page].pos().y()
         self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
         self.scroll_render_lock = False
+#########            Search Text            #########
+    def findNext(self):
+        text = self.findTextEdit.text()
+        area = self.search_area.adjusted(self.search_area.width(), 1, self.search_area.width(), 1)
+        self.findTextRequested.emit(text, self.search_page_no, area, False)
+        if self.search_text == text: return
+        self.search_text = text
+        self.search_area = QtCore.QRectF()
+        self.search_page_no = self.current_page
 
-#########      Cpoy Text to Clip Board      #####
+    def findBack(self):
+        text = self.findTextEdit.text()
+        area = self.search_area.adjusted(-self.search_area.width(), -1, -self.search_area.width(), -1)
+        self.findTextRequested.emit(text, self.search_page_no, area, True)
+        if self.search_text == text: return
+        self.search_text = text
+        self.search_area = QtCore.QRectF()
+        self.search_page_no = self.current_page
+
+    def onTextFound(self, page_no, area):
+        zoom = self.pages[page_no].dpi/72.0
+        self.pages[page_no].highlight_area = QtCore.QRectF(area.left()*zoom, area.top()*zoom,
+                                                           area.width()*zoom, area.height()*zoom)
+        # Alternate method of above two lines
+        #matrix = QMatrix(self.pages[page_no].dpi/72.0, 0,0, self.pages[page_no].dpi/72.0,0,0)
+        #self.pages[page_no].highlight_area = matrix.mapRect(area).toRect()
+        if self.pages[page_no].pixmap():
+            self.pages[page_no].updateImage()
+        else:
+            self.renderRequested.emit(page_no, self.pages[page_no].dpi)
+        if page_no != self.search_page_no :
+            self.pages[self.search_page_no].highlight_area = None
+            self.pages[self.search_page_no].updateImage()
+            self.jumpToPage(page_no)
+        self.search_area = area
+        self.search_page_no = page_no
+
+    def toggleFindMode(self, enable):
+        if enable:
+          self.findTextEdit.setFocus()
+          self.search_text = ''
+          self.search_area = QtCore.QRectF()
+          self.search_page_no = self.current_page
+        else:
+          self.pages[self.search_page_no].highlight_area = None
+          self.pages[self.search_page_no].updateImage()
+          self.search_text = ''
+          self.search_area = QtCore.QRectF()
+          self.findTextEdit.setText('')
+
+#########      Cpoy Text to Clip Board      #########
     def toggleCopyText(self, checked):
         if checked:
-            self.copy_text_pages = [self.current_page, self.current_page+1]
+            self.copy_text_pages = [self.current_page]
+            if self.current_page+1 < self.total_pages: # add next page when current page is not last page
+                self.copy_text_pages.append(self.current_page+1)
             for page_no in self.copy_text_pages:
                 self.pages[page_no].copy_text_mode = True
                 self.pages[page_no].copyTextRequested.connect(self.copyText)
@@ -505,9 +594,12 @@ class PageWidget(QLabel):
         self.annots_listed = False
         self.copy_text_mode = False
         self.click_point = None
+        self.image = QPixmap()
+        self.highlight_area = None
 
     def setPageData(self, page_no, pixmap, page):
-        QLabel.setPixmap(self, pixmap)
+        self.image = pixmap
+        self.updateImage()
         if self.annots_listed : return
         annots = page.annotations()
         for annot in annots:
@@ -517,6 +609,10 @@ class PageWidget(QLabel):
                 self.link_areas.append(QtCore.QRectF(x,y, w, h))
                 self.link_annots.append(annot)
         self.annots_listed = True
+
+    def clear(self):
+        QLabel.clear(self)
+        self.image = QPixmap()
 
     def mouseMoveEvent(self, ev):
         # Draw rectangle when mouse is clicked and dragged in copy text mode.
@@ -566,6 +662,17 @@ class PageWidget(QLabel):
             self.copyTextRequested.emit(self.click_point, ev.pos())
             self.click_point = None
             self.setPixmap(self.pm)
+
+    def updateImage(self):
+        #if self.image.isNull() : return
+        if self.highlight_area:
+            img = self.image.copy()
+            painter = QPainter(img)
+            painter.fillRect(self.highlight_area, QColor(0,255,0, 127))
+            painter.end()
+            self.setPixmap(img)
+        else:
+            self.setPixmap(self.image)
 
 def main():
     app = QApplication(sys.argv)
