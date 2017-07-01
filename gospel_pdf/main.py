@@ -291,8 +291,8 @@ class Main(QMainWindow, Ui_window):
         # Request to render next page
         if page_no < self.current_page + self.max_preload - 2: 
             if page_no+2 not in self.rendered_pages and page_no+2 < self.total_pages:
-              self.renderRequested.emit(page_no+2, self.pages[page_no+2].dpi)
               self.rendered_pages.append(page_no+2)
+              self.renderRequested.emit(page_no+2, self.pages[page_no+2].dpi)
               self.pages[page_no+2].jumpToRequested.connect(self.jumpToPage)
         # Replace old rendered pages with blank image
         if len(self.rendered_pages)>10:
@@ -308,8 +308,8 @@ class Main(QMainWindow, Ui_window):
         for page_no in range(self.current_page, self.current_page+self.max_preload):
             if page_no not in self.rendered_pages and page_no < self.total_pages:
                 #dpi = self.pages[page_no].dpi
-                self.renderRequested.emit(page_no, self.pages[page_no].dpi)
                 self.rendered_pages.append(page_no)
+                self.renderRequested.emit(page_no, self.pages[page_no].dpi)
                 self.pages[page_no].jumpToRequested.connect(self.jumpToPage)
                 requested += 1
                 print page_no
@@ -438,6 +438,7 @@ class Main(QMainWindow, Ui_window):
         if self.pages[page_no].pixmap():
             self.pages[page_no].updateImage()
         else:
+            self.rendered_pages.append(page_no)
             self.renderRequested.emit(page_no, self.pages[page_no].dpi)
         if page_no != self.search_page_no :
             self.pages[self.search_page_no].highlight_area = None
@@ -497,9 +498,9 @@ class Main(QMainWindow, Ui_window):
             return
         self.dockWidget.show()
         outline_model = QStandardItemModel(self)
-        prnt_item = outline_model.invisibleRootItem()
+        parent_item = outline_model.invisibleRootItem()
         node = toc.firstChild()
-        loadOutline(doc, node, prnt_item)
+        loadOutline(doc, node, parent_item)
         self.treeView.setModel(outline_model)
         self.treeView.expandToDepth(0)
         self.treeView.setHeaderHidden(True)

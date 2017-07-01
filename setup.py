@@ -27,7 +27,8 @@ Install python-qt4 and python-poppler-qt4 (for PyQt4 and popplerqt4 module) in d
           'console_scripts': ['gospel-pdf=gospel_pdf.main:main'],
       },
       data_files=[
-                 ('share/applications', ['files/gospel-pdf.desktop'])
+                 ('share/applications', ['files/gospel-pdf.desktop']),
+                 ('share/icons', ['files/gospel-pdf.png'])
       ],
-      #include_package_data=True,
+      include_package_data=True,
       zip_safe=False)

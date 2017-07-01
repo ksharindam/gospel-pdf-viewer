@@ -9,10 +9,7 @@ Debian Dependency = python-qt4, python-poppler-qt4
 
 Description = A poppler based PDF viewer written in PyQt4
 Changes :
-        Search text feature added.
-        Bug about hidden total pages status fixed.
-        Open Password protected PDF
-        Text copy feature added
+        Automatically installs desktop file and icon
 
 ...........................................................................
 |   Copyright (C) 2016-2017 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -40,4 +37,4 @@ Changes :
 #       add highlight annotation
 # FIXME : 
 
-__version__ = '1.3.3'
+__version__ = '1.3.5'
