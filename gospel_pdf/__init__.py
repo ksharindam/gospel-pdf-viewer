@@ -9,7 +9,7 @@ Debian Dependency = python-qt4, python-poppler-qt4
 
 Description = A poppler based PDF viewer written in PyQt4
 Changes :
-        Automatically installs desktop file and icon
+        Undo Jump Page button added.
 
 ...........................................................................
 |   Copyright (C) 2016-2017 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -32,9 +32,8 @@ Changes :
 #       Show fonts list
 #       Show document info
 #       Print File
-#       undo jump page
 #       Recent files list, clear recent option, clear history files
 #       add highlight annotation
 # FIXME : 
-
-__version__ = '1.3.5'
+#       UnicodeWarning: in line 537
+__version__ = '1.3.6'

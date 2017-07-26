@@ -125,6 +125,9 @@ class Main(QMainWindow, Ui_window):
         self.lastPageAction.triggered.connect(self.goLastPage)
         self.gotoPageAction = QAction(QIcon(":/goto.png"), "GoTo Page", self)
         self.gotoPageAction.triggered.connect(self.gotoPage)
+        self.undoJumpAction = QAction(QIcon(":/undo-jump.png"), "Jump Back", self)
+        self.undoJumpAction.setShortcut("Shift+Backspace")
+        self.undoJumpAction.triggered.connect(self.undoJump)
         self.zoominAction = QAction(QIcon(":/zoomin.png"), "Zoom In", self)
         self.zoominAction.setShortcut("Ctrl++")
         self.zoominAction.triggered.connect(self.zoomIn)
@@ -144,6 +147,7 @@ class Main(QMainWindow, Ui_window):
         self.menuView.addAction(self.zoomoutAction)
         self.menuNavigate.addAction(self.prevPageAction)
         self.menuNavigate.addAction(self.nextPageAction)
+        self.menuNavigate.addAction(self.undoJumpAction)
         # Create widgets for menubar / toolbar
         self.totalPagesLabel = QLabel(self)
         self.totalPagesLabel.setMinimumWidth(100)
@@ -178,6 +182,7 @@ class Main(QMainWindow, Ui_window):
         self.toolBar.addWidget(self.pageNoLabel)
         self.toolBar.addAction(self.nextPageAction)
         self.toolBar.addAction(self.lastPageAction)
+        self.toolBar.addAction(self.undoJumpAction)
         self.toolBar.addWidget(self.gotoPageEdit)
         self.toolBar.addAction(self.gotoPageAction)
         self.toolBar.addSeparator()
@@ -217,6 +222,7 @@ class Main(QMainWindow, Ui_window):
         # Initialize Variables
         self.pages = []
         self.filename = None
+        self.jumped_from = None
 
     def removeOldDoc(self):
         # Save current page number
@@ -281,7 +287,7 @@ class Main(QMainWindow, Ui_window):
         self.pageNoLabel.setText(str(self.current_page+1))
         self.gotoPageValidator.setTop(self.total_pages)
         self.setWindowTitle(path.basename(self.filename)+ " - Gospel PDF")
-        if self.current_page != 0 : QtCore.QTimer.singleShot(300, self.jumpToPage)
+        if self.current_page != 0 : QtCore.QTimer.singleShot(300, self.jumpToCurrentPage)
 
     def setRenderedImage(self, page_no, image):
         """ takes a QImage and sets pixmap of the specified page 
@@ -334,35 +340,43 @@ class Main(QMainWindow, Ui_window):
         if not filename.isEmpty():
             self.loadPDFfile(filename)
 
-    def jumpToPage(self, page_no=None):
-        """ gets the current page no from Main.current_page variable, then scrolls to that position """
-        if page_no == None: page_no = self.current_page
-        scrolbar_pos = self.pages[page_no].pos().y()
+    def jumpToCurrentPage(self):
+        scrolbar_pos = self.pages[self.current_page].pos().y()
         self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
+
+    def jumpToPage(self, page_no):
+        """ gets the current page no from Main.current_page variable, then scrolls to that position """
+        self.jumped_from = self.current_page
+        self.current_page = page_no
+        self.jumpToCurrentPage()
+
+    def undoJump(self):
+        if self.jumped_from == None: return
+        self.jumpToPage(self.jumped_from)
 
     def goNextPage(self):
         if self.current_page == self.total_pages-1 : return
         self.current_page += 1
-        self.jumpToPage()
+        self.jumpToCurrentPage()
 
     def goPrevPage(self):
         if self.current_page == 0 : return
         self.current_page -= 1
-        self.jumpToPage()
+        self.jumpToCurrentPage()
 
     def goFirstPage(self):
         self.current_page = 0
-        self.jumpToPage()
+        self.jumpToCurrentPage()
 
     def goLastPage(self):
         self.current_page = self.total_pages-1
-        self.jumpToPage()
+        self.jumpToCurrentPage()
 
     def gotoPage(self):
         text = self.gotoPageEdit.text()
         if text.isEmpty() : return
-        self.current_page = int(text)-1
-        self.jumpToPage()
+        #self.current_page = int(text)-1
+        self.jumpToPage(int(text)-1)
         self.gotoPageEdit.clear()
         self.gotoPageEdit.clearFocus()
 
@@ -512,8 +526,7 @@ class Main(QMainWindow, Ui_window):
     def onOutlineClick(self, m_index):
         page = self.treeView.model().data(m_index, QtCore.Qt.UserRole+1).toString()
         if page == "": return
-        self.current_page = int(page)-1
-        self.jumpToPage()
+        self.jumpToPage(int(page)-1)
 
     def closeEvent(self, ev):
         """ Save all settings on window close """
