@@ -226,7 +226,7 @@ class Main(QMainWindow, Ui_window):
 
     def removeOldDoc(self):
         # Save current page number
-        if self.filename in self.history_filenames:
+        if QtCore.QString(self.filename) in self.history_filenames:
             index = self.history_filenames.index(self.filename)
             self.history_page_no[index] = self.current_page
         else:
@@ -535,7 +535,7 @@ class Main(QMainWindow, Ui_window):
         self.settings.setValue("DPI", dpi)
         self.settings.setValue("FixedWidth", self.fixed_width)
         if self.filename:
-            if self.filename in self.history_filenames:
+            if QtCore.QString(self.filename) in self.history_filenames:
                 index = self.history_filenames.index(self.filename)
                 self.history_page_no[index] = self.current_page
             else:

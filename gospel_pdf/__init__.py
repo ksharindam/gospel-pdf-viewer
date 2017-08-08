@@ -10,6 +10,7 @@ Debian Dependency = python-qt4, python-poppler-qt4
 Description = A poppler based PDF viewer written in PyQt4
 Changes :
         Undo Jump Page button added.
+        Fixed : filename not matched in history_filenames list
 
 ...........................................................................
 |   Copyright (C) 2016-2017 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -35,5 +36,5 @@ Changes :
 #       Recent files list, clear recent option, clear history files
 #       add highlight annotation
 # FIXME : 
-#       UnicodeWarning: in line 537
+#       
 __version__ = '1.3.6'
