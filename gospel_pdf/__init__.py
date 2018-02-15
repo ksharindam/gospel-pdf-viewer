@@ -11,7 +11,8 @@ Description = A poppler based PDF viewer written in PyQt4
 Changes :
         Undo Jump Page button added.
         Fixed : filename not matched in history_filenames list
-
+        Highlight position adjusted.
+        fixed : list index out of range error when opening second document of less pages
 ...........................................................................
 |   Copyright (C) 2016-2017 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
@@ -30,6 +31,7 @@ Changes :
 ...........................................................................
 """
 # TODO: 
+#       Rotate pages
 #       Show fonts list
 #       Show document info
 #       Print File
@@ -37,4 +39,4 @@ Changes :
 #       add highlight annotation
 # FIXME : 
 #       
-__version__ = '1.3.6'
+__version__ = '1.3.8'

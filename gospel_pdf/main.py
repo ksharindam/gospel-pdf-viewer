@@ -16,8 +16,11 @@ from ui_main_window import Ui_window
 #from PyQt4 import uic
 #main_ui = uic.loadUiType("main_window.ui")
 
-dpi = 100
+DPI = 100
 HOMEDIR = environ["HOME"]
+
+#def pt2pixel(point, dpi):
+#    return dpi*point/72.0
 
 class Renderer(QtCore.QObject):
     rendered = QtCore.pyqtSignal(int, QImage)
@@ -44,8 +47,8 @@ class Renderer(QtCore.QObject):
         annots = page.annotations()
         for annot in annots:
           if annot.subType() == Poppler.Annotation.ALink:
-            x, y = annot.boundary().left()*img.width(), annot.boundary().top()*img.height()-1
-            w, h = annot.boundary().width()*img.width()-1, annot.boundary().height()*img.height()-1
+            x, y = annot.boundary().left()*img.width(), annot.boundary().top()*img.height()
+            w, h = annot.boundary().width()*img.width()+1, annot.boundary().height()*img.height()+1
             self.painter.fillRect(x, y, w, h, self.link_color)
         self.painter.end()
         self.rendered.emit(page_no, img)
@@ -98,14 +101,13 @@ class Main(QMainWindow, Ui_window):
         desktop = QApplication.desktop()
         # Impoort settings
         self.settings = QtCore.QSettings("gospel-pdf", "main", self)
-        global dpi
-        dpi = int(self.settings.value("DPI", 100).toString())
+        global DPI
+        DPI = int(self.settings.value("DPI", 100).toString())
         self.history_filenames = list( self.settings.value("HistoryFileNameList", []).toStringList())
         self.history_page_no = list( self.settings.value("HistoryPageNoList", []).toStringList() )
         self.offset_x = int(self.settings.value("OffsetX", 4).toString())
         self.offset_y = int(self.settings.value("OffsetY", 26).toString())
         self.available_area = [desktop.availableGeometry().width(), desktop.availableGeometry().height()]
-        self.fixed_width = int(self.settings.value("FixedWidth", 900).toString())
         # Add shortcut actions
         self.openFileAction = QAction(QIcon(":/open.png"), "Open", self)
         self.openFileAction.setShortcut("Ctrl+O")
@@ -166,8 +168,8 @@ class Main(QMainWindow, Ui_window):
         self.zoomLevelCombo.addItems(["Fixed Width", "75%", "90%","100%","110%","121%","133%","146%", "175%", "200%"])
         self.zoomLevelCombo.activated.connect(self.setZoom)
         self.zoom_levels = [0, 75, 90, 100, 110 , 121, 133, 146, 175, 200]
-        if dpi in self.zoom_levels: 
-            self.zoomLevelCombo.setCurrentIndex(self.zoom_levels.index(dpi))
+        if DPI in self.zoom_levels: 
+            self.zoomLevelCombo.setCurrentIndex(self.zoom_levels.index(DPI))
         else:
             self.zoomLevelCombo.setCurrentIndex(2)
         # Add toolbar actions
@@ -241,7 +243,6 @@ class Main(QMainWindow, Ui_window):
 
     def loadPDFfile(self, filename):
         """ Loads pdf document in all threads """
-        self.filename = unicode(filename)
         self.doc = Poppler.Document.load(filename)
         if not self.doc : return
         password = ''
@@ -251,9 +252,12 @@ class Main(QMainWindow, Ui_window):
             self.doc.unlock(password, password)
         if not self.first_document:
             self.removeOldDoc()
+        self.filename = unicode(filename)
         # Load Document in other threads
+        self.getOutlines(self.doc)
         self.loadFileRequested.emit(filename, password)
         self.total_pages = self.doc.numPages()
+        print int(self.history_page_no[self.history_filenames.index(self.filename)])
         try : self.current_page = int(self.history_page_no[self.history_filenames.index(self.filename)])
         except : self.current_page = 0
         self.rendered_pages = []
@@ -278,7 +282,6 @@ class Main(QMainWindow, Ui_window):
         self.renderCurrentPage()
         # Resize window
         self.larger_page = 2 if (self.total_pages > 2) else 0
-        self.getOutlines(self.doc)
         self.move((self.available_area[0]-(self.width()+2*self.offset_x))/2,
                     (self.available_area[1]-(self.height()+self.offset_y+self.offset_x))/2 )
         #scrolbar_pos = self.pages[self.current_page].pos().y()
@@ -380,26 +383,36 @@ class Main(QMainWindow, Ui_window):
         self.gotoPageEdit.clear()
         self.gotoPageEdit.clearFocus()
 
+######################  Zoom and Size Management  ##########################
+
+    def availableWidth(self):
+        """ Returns available width for rendering a page """
+        dock_width = 0 if self.dockWidget.isHidden() else self.dockWidget.width()
+        return self.width() - dock_width - 50       
+
     def resizePages(self):
-        global dpi
+        '''Resize all pages according to zoom level '''
+        global DPI
+        fixed_width = self.availableWidth()
         for i in range(self.total_pages):
-            if self.zoomLevelCombo.currentIndex() == 0:
-                DPI = 72.0*self.fixed_width/self.doc.page(i).pageSizeF().width()
-            else: DPI = dpi
-            self.pages[i].dpi = DPI
-            self.pages[i].setFixedSize(self.doc.page(i).pageSizeF().width()*DPI/72.0, self.doc.page(i).pageSizeF().height()*DPI/72.0)
+            pg_width = self.doc.page(i).pageSizeF().width()
+            pg_height = self.doc.page(i).pageSizeF().height()
+            if self.zoomLevelCombo.currentIndex() == 0: # if fixed width
+                dpi = 72.0*fixed_width/pg_width
+            else: dpi = DPI
+            self.pages[i].dpi = dpi
+            self.pages[i].setFixedSize(pg_width*dpi/72.0, pg_height*dpi/72.0)
         for page_no in self.rendered_pages:
             self.pages[page_no].clear()
 
     def setZoom(self, index):
         """ Gets called when zoom level is changed"""
         self.scroll_render_lock = True # rendering on scroll is locked as set scroll position 
-        global dpi
+        global DPI
         if index==0:
-            dpi = 0
-            self.fixed_width = self.pages[self.current_page].width()
+            DPI = 0
         else:
-            dpi = self.zoom_levels[index]
+            DPI = self.zoom_levels[index]
         self.resizePages()
         self.rendered_pages = []
         self.renderCurrentPage()
@@ -508,7 +521,7 @@ class Main(QMainWindow, Ui_window):
         toc = doc.toc()
         if not toc:
             self.dockWidget.hide()
-            self.resize(self.pages[self.larger_page].width() + 56, self.available_area[1]-self.offset_y)
+            #self.resize(self.pages[self.larger_page].width() + 56, self.available_area[1]-self.offset_y)
             return
         self.dockWidget.show()
         outline_model = QStandardItemModel(self)
@@ -521,7 +534,7 @@ class Main(QMainWindow, Ui_window):
         self.treeView.header().setResizeMode(0, 1)
         self.treeView.header().setResizeMode(1, 3)
         self.treeView.header().setStretchLastSection(False)
-        self.resize(self.pages[self.larger_page].width() + 56 + 310, self.available_area[1]-self.offset_y)
+        #self.resize(self.pages[self.larger_page].width() + 56 + 310, self.available_area[1]-self.offset_y)
 
     def onOutlineClick(self, m_index):
         page = self.treeView.model().data(m_index, QtCore.Qt.UserRole+1).toString()
@@ -532,8 +545,8 @@ class Main(QMainWindow, Ui_window):
         """ Save all settings on window close """
         self.settings.setValue("OffsetX", self.geometry().x()-self.x())
         self.settings.setValue("OffsetY", self.geometry().y()-self.y())
-        self.settings.setValue("DPI", dpi)
-        self.settings.setValue("FixedWidth", self.fixed_width)
+        self.settings.setValue("DPI", DPI)
+        #self.settings.setValue("FixedWidth", self.fixed_width)
         if self.filename:
             if QtCore.QString(self.filename) in self.history_filenames:
                 index = self.history_filenames.index(self.filename)
@@ -614,8 +627,8 @@ class PageWidget(QLabel):
         annots = page.annotations()
         for annot in annots:
             if annot.subType() == Poppler.Annotation.ALink:
-                x, y = annot.boundary().left()*pixmap.width(), annot.boundary().top()*pixmap.height()-1
-                w, h = annot.boundary().width()*pixmap.width()-1, annot.boundary().height()*pixmap.height()-1
+                x, y = annot.boundary().left()*pixmap.width(), annot.boundary().top()*pixmap.height()
+                w, h = annot.boundary().width()*pixmap.width()+1, annot.boundary().height()*pixmap.height()+1
                 self.link_areas.append(QtCore.QRectF(x,y, w, h))
                 self.link_annots.append(annot)
         self.annots_listed = True
