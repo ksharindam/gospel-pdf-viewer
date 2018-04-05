@@ -16,7 +16,7 @@ from ui_main_window import Ui_window
 #from PyQt4 import uic
 #main_ui = uic.loadUiType("main_window.ui")
 
-DPI = 100
+SCREEN_DPI = 100
 HOMEDIR = environ["HOME"]
 
 #def pt2pixel(point, dpi):
@@ -99,15 +99,9 @@ class Main(QMainWindow, Ui_window):
         self.treeView.clicked.connect(self.onOutlineClick)
         self.first_document = True
         desktop = QApplication.desktop()
-        # Impoort settings
-        self.settings = QtCore.QSettings("gospel-pdf", "main", self)
-        global DPI
-        DPI = int(self.settings.value("DPI", 100).toString())
-        self.history_filenames = list( self.settings.value("HistoryFileNameList", []).toStringList())
-        self.history_page_no = list( self.settings.value("HistoryPageNoList", []).toStringList() )
-        self.offset_x = int(self.settings.value("OffsetX", 4).toString())
-        self.offset_y = int(self.settings.value("OffsetY", 26).toString())
-        self.available_area = [desktop.availableGeometry().width(), desktop.availableGeometry().height()]
+        self.resize_page_timer = QtCore.QTimer(self)
+        self.resize_page_timer.setSingleShot(True)
+        self.resize_page_timer.timeout.connect(self.onWindowResize)
         # Add shortcut actions
         self.openFileAction = QAction(QIcon(":/open.png"), "Open", self)
         self.openFileAction.setShortcut("Ctrl+O")
@@ -168,10 +162,6 @@ class Main(QMainWindow, Ui_window):
         self.zoomLevelCombo.addItems(["Fixed Width", "75%", "90%","100%","110%","121%","133%","146%", "175%", "200%"])
         self.zoomLevelCombo.activated.connect(self.setZoom)
         self.zoom_levels = [0, 75, 90, 100, 110 , 121, 133, 146, 175, 200]
-        if DPI in self.zoom_levels: 
-            self.zoomLevelCombo.setCurrentIndex(self.zoom_levels.index(DPI))
-        else:
-            self.zoomLevelCombo.setCurrentIndex(2)
         # Add toolbar actions
         self.toolBar.addAction(self.openFileAction)
         self.toolBar.addSeparator()
@@ -194,6 +184,14 @@ class Main(QMainWindow, Ui_window):
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.quitAction)
         # Add widgets
+        # Impoort settings
+        self.settings = QtCore.QSettings("gospel-pdf", "main", self)
+        self.history_filenames = list( self.settings.value("HistoryFileNameList", []).toStringList())
+        self.history_page_no = list( self.settings.value("HistoryPageNoList", []).toStringList() )
+        self.offset_x = int(self.settings.value("OffsetX", 4).toString())
+        self.offset_y = int(self.settings.value("OffsetY", 26).toString())
+        self.available_area = [desktop.availableGeometry().width(), desktop.availableGeometry().height()]
+        self.zoomLevelCombo.setCurrentIndex(int(self.settings.value("ZoomLevel", 2).toString()))
         # Connect Signals
         self.scrollArea.verticalScrollBar().valueChanged.connect(self.onMouseScroll)
         self.scrollArea.verticalScrollBar().sliderReleased.connect(self.onSliderRelease)
@@ -219,12 +217,16 @@ class Main(QMainWindow, Ui_window):
         self.loadFileRequested.connect(self.renderer2.loadDocument)
         self.renderer2.rendered.connect(self.setRenderedImage)
         self.thread2.start()
+        # Initialize Variables
+        self.filename = ''
+        #self.total_pages = 0
+        self.pages = []
+        #self.rendered_pages = []
+        #self.current_page = 0
+        self.jumped_from = None
+        self.max_preload = 1
         # Show Window
         self.show()
-        # Initialize Variables
-        self.pages = []
-        self.filename = None
-        self.jumped_from = None
 
     def removeOldDoc(self):
         # Save current page number
@@ -253,15 +255,14 @@ class Main(QMainWindow, Ui_window):
         if not self.first_document:
             self.removeOldDoc()
         self.filename = unicode(filename)
-        # Load Document in other threads
-        self.getOutlines(self.doc)
-        self.loadFileRequested.emit(filename, password)
         self.total_pages = self.doc.numPages()
-        print int(self.history_page_no[self.history_filenames.index(self.filename)])
-        try : self.current_page = int(self.history_page_no[self.history_filenames.index(self.filename)])
-        except : self.current_page = 0
         self.rendered_pages = []
         self.first_document = False
+        self.getOutlines(self.doc)
+        # Load Document in other threads
+        self.loadFileRequested.emit(filename, password)
+        try : self.current_page = int(self.history_page_no[self.history_filenames.index(self.filename)])
+        except : self.current_page = 0
         self.scroll_render_lock = False
         # Add widgets
         self.frame = QFrame(self.scrollAreaWidgetContents)
@@ -279,11 +280,10 @@ class Main(QMainWindow, Ui_window):
             self.verticalLayout.addWidget(page, 0, QtCore.Qt.AlignCenter)
             self.pages.append(page)
         self.resizePages()
-        self.renderCurrentPage()
+        #self.renderCurrentPage()
         # Resize window
-        self.larger_page = 2 if (self.total_pages > 2) else 0
-        self.move((self.available_area[0]-(self.width()+2*self.offset_x))/2,
-                    (self.available_area[1]-(self.height()+self.offset_y+self.offset_x))/2 )
+        #self.move((self.available_area[0]-(self.width()+2*self.offset_x))/2,
+        #            (self.available_area[1]-(self.height()+self.offset_y+self.offset_x))/2 )
         #scrolbar_pos = self.pages[self.current_page].pos().y()
         #self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
         self.totalPagesLabel.setText("Total "+str(self.total_pages)+" pages")
@@ -392,30 +392,27 @@ class Main(QMainWindow, Ui_window):
 
     def resizePages(self):
         '''Resize all pages according to zoom level '''
-        global DPI
+        page_dpi = self.zoom_levels[self.zoomLevelCombo.currentIndex()]*SCREEN_DPI/100
         fixed_width = self.availableWidth()
         for i in range(self.total_pages):
             pg_width = self.doc.page(i).pageSizeF().width()
             pg_height = self.doc.page(i).pageSizeF().height()
             if self.zoomLevelCombo.currentIndex() == 0: # if fixed width
                 dpi = 72.0*fixed_width/pg_width
-            else: dpi = DPI
+            else: dpi = page_dpi
             self.pages[i].dpi = dpi
             self.pages[i].setFixedSize(pg_width*dpi/72.0, pg_height*dpi/72.0)
         for page_no in self.rendered_pages:
             self.pages[page_no].clear()
+        self.rendered_pages = []
+        self.renderCurrentPage()
 
     def setZoom(self, index):
         """ Gets called when zoom level is changed"""
         self.scroll_render_lock = True # rendering on scroll is locked as set scroll position 
-        global DPI
-        if index==0:
-            DPI = 0
-        else:
-            DPI = self.zoom_levels[index]
         self.resizePages()
-        self.rendered_pages = []
-        self.renderCurrentPage()
+        #self.rendered_pages = []
+        #self.renderCurrentPage()
         QtCore.QTimer.singleShot(300, self.afterZoom)
 
     def zoomIn(self):
@@ -521,7 +518,6 @@ class Main(QMainWindow, Ui_window):
         toc = doc.toc()
         if not toc:
             self.dockWidget.hide()
-            #self.resize(self.pages[self.larger_page].width() + 56, self.available_area[1]-self.offset_y)
             return
         self.dockWidget.show()
         outline_model = QStandardItemModel(self)
@@ -534,20 +530,30 @@ class Main(QMainWindow, Ui_window):
         self.treeView.header().setResizeMode(0, 1)
         self.treeView.header().setResizeMode(1, 3)
         self.treeView.header().setStretchLastSection(False)
-        #self.resize(self.pages[self.larger_page].width() + 56 + 310, self.available_area[1]-self.offset_y)
 
     def onOutlineClick(self, m_index):
         page = self.treeView.model().data(m_index, QtCore.Qt.UserRole+1).toString()
         if page == "": return
         self.jumpToPage(int(page)-1)
 
+    def resizeEvent(self, ev):
+        QMainWindow.resizeEvent(self, ev)
+        if self.filename == '' : return
+        if self.zoomLevelCombo.currentIndex() == 0:
+            self.resize_page_timer.start(500)
+
+    def onWindowResize(self):
+        self.resizePages()
+        wait(50)
+        self.jumpToCurrentPage()
+
     def closeEvent(self, ev):
         """ Save all settings on window close """
         self.settings.setValue("OffsetX", self.geometry().x()-self.x())
         self.settings.setValue("OffsetY", self.geometry().y()-self.y())
-        self.settings.setValue("DPI", DPI)
+        self.settings.setValue("ZoomLevel", self.zoomLevelCombo.currentIndex())
         #self.settings.setValue("FixedWidth", self.fixed_width)
-        if self.filename:
+        if self.filename != '':
             if QtCore.QString(self.filename) in self.history_filenames:
                 index = self.history_filenames.index(self.filename)
                 self.history_page_no[index] = self.current_page
@@ -696,6 +702,11 @@ class PageWidget(QLabel):
             self.setPixmap(img)
         else:
             self.setPixmap(self.image)
+
+def wait(millisec):
+    loop = QtCore.QEventLoop()
+    QtCore.QTimer.singleShot(millisec, loop.quit)
+    loop.exec_()
 
 def main():
     app = QApplication(sys.argv)

@@ -13,6 +13,7 @@ Changes :
         Fixed : filename not matched in history_filenames list
         Highlight position adjusted.
         fixed : list index out of range error when opening second document of less pages
+        fixed : page resize problem when window is resized
 ...........................................................................
 |   Copyright (C) 2016-2017 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
@@ -38,5 +39,6 @@ Changes :
 #       Recent files list, clear recent option, clear history files
 #       add highlight annotation
 # FIXME : 
-#       
+#       hyperlinks positions are dislocated after window resize
+#       jump_from variable have to be reset after new doc is loaded
 __version__ = '1.3.8'
