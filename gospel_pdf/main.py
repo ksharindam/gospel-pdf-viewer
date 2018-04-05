@@ -550,7 +550,7 @@ class Main(QMainWindow, Ui_window):
         self.resizePages()
         wait(50)
         self.jumpToCurrentPage()
-        if not self.isFullScreen():
+        if not self.isMaximized():
             self.settings.setValue("WindowWidth", self.width())
             self.settings.setValue("WindowHeight", self.height())
 
