@@ -226,6 +226,9 @@ class Main(QMainWindow, Ui_window):
         self.jumped_from = None
         self.max_preload = 1
         # Show Window
+        width = int(self.settings.value("WindowWidth").toString())
+        height = int(self.settings.value("WindowHeight").toString())
+        self.resize(width, height)
         self.show()
 
     def removeOldDoc(self):
@@ -547,6 +550,9 @@ class Main(QMainWindow, Ui_window):
         self.resizePages()
         wait(50)
         self.jumpToCurrentPage()
+        if not self.isFullScreen():
+            self.settings.setValue("WindowWidth", self.width())
+            self.settings.setValue("WindowHeight", self.height())
 
     def closeEvent(self, ev):
         """ Save all settings on window close """

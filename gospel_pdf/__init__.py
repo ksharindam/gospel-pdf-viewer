@@ -14,6 +14,7 @@ Changes :
         Highlight position adjusted.
         fixed : list index out of range error when opening second document of less pages
         fixed : page resize problem when window is resized
+        window size is remembered
 ...........................................................................
 |   Copyright (C) 2016-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
