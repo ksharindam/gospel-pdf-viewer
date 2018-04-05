@@ -15,7 +15,7 @@ Changes :
         fixed : list index out of range error when opening second document of less pages
         fixed : page resize problem when window is resized
 ...........................................................................
-|   Copyright (C) 2016-2017 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2016-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -40,5 +40,5 @@ Changes :
 #       add highlight annotation
 # FIXME : 
 #       hyperlinks positions are dislocated after window resize
-#       jump_from variable have to be reset after new doc is loaded
+
 __version__ = '1.3.8'

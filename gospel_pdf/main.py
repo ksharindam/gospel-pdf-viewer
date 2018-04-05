@@ -242,6 +242,7 @@ class Main(QMainWindow, Ui_window):
         for i in range(len(self.pages)):
             self.pages.pop().deleteLater()
         self.frame.deleteLater()
+        self.jumped_from = None
 
     def loadPDFfile(self, filename):
         """ Loads pdf document in all threads """
