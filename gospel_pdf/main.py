@@ -12,6 +12,7 @@ from PyQt4.QtGui import QIntValidator, QComboBox, QPainter, QColor, QMessageBox
 from popplerqt4 import Poppler
 import resources
 from ui_main_window import Ui_window
+from __init__ import __version__
 
 #from PyQt4 import uic
 #main_ui = uic.loadUiType("main_window.ui")
@@ -293,7 +294,7 @@ class Main(QMainWindow, Ui_window):
         self.totalPagesLabel.setText("Total "+str(self.total_pages)+" pages")
         self.pageNoLabel.setText(str(self.current_page+1))
         self.gotoPageValidator.setTop(self.total_pages)
-        self.setWindowTitle(path.basename(self.filename)+ " - Gospel PDF")
+        self.setWindowTitle(path.basename(self.filename)+ " - Gospel PDF " + __version__)
         if self.current_page != 0 : QtCore.QTimer.singleShot(300, self.jumpToCurrentPage)
 
     def setRenderedImage(self, page_no, image):
@@ -332,7 +333,7 @@ class Main(QMainWindow, Ui_window):
         """ Gets the current page number on scrolling, then requests to render"""
         index = self.verticalLayout.indexOf(self.frame.childAt(self.frame.width()/2, pos))
         if index == -1: return
-        self.pageNoLabel.setText(str(index+1))
+        self.pageNoLabel.setText('<b>' + str(index+1) + '</b>')
         if self.scrollArea.verticalScrollBar().isSliderDown() or self.scroll_render_lock : return
         self.current_page = index
         self.renderCurrentPage()
@@ -547,6 +548,8 @@ class Main(QMainWindow, Ui_window):
             self.resize_page_timer.start(500)
 
     def onWindowResize(self):
+        for i in range(self.total_pages):
+            self.pages[i].annots_listed = False # Clears prev link annotation positions
         self.resizePages()
         wait(50)
         self.jumpToCurrentPage()
@@ -559,7 +562,6 @@ class Main(QMainWindow, Ui_window):
         self.settings.setValue("OffsetX", self.geometry().x()-self.x())
         self.settings.setValue("OffsetY", self.geometry().y()-self.y())
         self.settings.setValue("ZoomLevel", self.zoomLevelCombo.currentIndex())
-        #self.settings.setValue("FixedWidth", self.fixed_width)
         if self.filename != '':
             if QtCore.QString(self.filename) in self.history_filenames:
                 index = self.history_filenames.index(self.filename)

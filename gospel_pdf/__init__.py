@@ -15,6 +15,7 @@ Changes :
         fixed : list index out of range error when opening second document of less pages
         fixed : page resize problem when window is resized
         window size is remembered
+        fixed : hyperlinks positions are dislocated after window resize
 ...........................................................................
 |   Copyright (C) 2016-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
@@ -40,6 +41,6 @@ Changes :
 #       Recent files list, clear recent option, clear history files
 #       add highlight annotation
 # FIXME : 
-#       hyperlinks positions are dislocated after window resize
+#       
 
-__version__ = '1.3.8'
+__version__ = '1.3.9'
