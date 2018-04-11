@@ -16,6 +16,7 @@ Changes :
         fixed : page resize problem when window is resized
         window size is remembered
         fixed : hyperlinks positions are dislocated after window resize
+        fixed : Infinite loop in render queue
 ...........................................................................
 |   Copyright (C) 2016-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
@@ -41,6 +42,7 @@ Changes :
 #       Recent files list, clear recent option, clear history files
 #       add highlight annotation
 # FIXME : 
+#       Search is not cancelled immediately, when cancel is pressed
 #       
 
-__version__ = '1.3.9'
+__version__ = '1.3.10'

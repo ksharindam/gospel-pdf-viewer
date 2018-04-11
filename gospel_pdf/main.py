@@ -220,10 +220,7 @@ class Main(QMainWindow, Ui_window):
         self.thread2.start()
         # Initialize Variables
         self.filename = ''
-        #self.total_pages = 0
         self.pages = []
-        #self.rendered_pages = []
-        #self.current_page = 0
         self.jumped_from = None
         self.max_preload = 1
         # Show Window
@@ -285,7 +282,6 @@ class Main(QMainWindow, Ui_window):
             self.verticalLayout.addWidget(page, 0, QtCore.Qt.AlignCenter)
             self.pages.append(page)
         self.resizePages()
-        #self.renderCurrentPage()
         # Resize window
         #self.move((self.available_area[0]-(self.width()+2*self.offset_x))/2,
         #            (self.available_area[1]-(self.height()+self.offset_y+self.offset_x))/2 )
@@ -303,8 +299,8 @@ class Main(QMainWindow, Ui_window):
             deleted to save memory """
         self.pages[page_no].setPageData(page_no, QPixmap.fromImage(image), self.doc.page(page_no))
         # Request to render next page
-        if page_no < self.current_page + self.max_preload - 2: 
-            if page_no+2 not in self.rendered_pages and page_no+2 < self.total_pages:
+        if self.current_page < page_no < (self.current_page + self.max_preload - 2): 
+            if (page_no+2 not in self.rendered_pages) and (page_no+2 < self.total_pages):
               self.rendered_pages.append(page_no+2)
               self.renderRequested.emit(page_no+2, self.pages[page_no+2].dpi)
               self.pages[page_no+2].jumpToRequested.connect(self.jumpToPage)
@@ -320,8 +316,7 @@ class Main(QMainWindow, Ui_window):
             to render next unrendered page """
         requested = 0
         for page_no in range(self.current_page, self.current_page+self.max_preload):
-            if page_no not in self.rendered_pages and page_no < self.total_pages:
-                #dpi = self.pages[page_no].dpi
+            if (page_no not in self.rendered_pages) and (page_no < self.total_pages):
                 self.rendered_pages.append(page_no)
                 self.renderRequested.emit(page_no, self.pages[page_no].dpi)
                 self.pages[page_no].jumpToRequested.connect(self.jumpToPage)
@@ -383,7 +378,6 @@ class Main(QMainWindow, Ui_window):
     def gotoPage(self):
         text = self.gotoPageEdit.text()
         if text.isEmpty() : return
-        #self.current_page = int(text)-1
         self.jumpToPage(int(text)-1)
         self.gotoPageEdit.clear()
         self.gotoPageEdit.clearFocus()
@@ -416,8 +410,6 @@ class Main(QMainWindow, Ui_window):
         """ Gets called when zoom level is changed"""
         self.scroll_render_lock = True # rendering on scroll is locked as set scroll position 
         self.resizePages()
-        #self.rendered_pages = []
-        #self.renderCurrentPage()
         QtCore.QTimer.singleShot(300, self.afterZoom)
 
     def zoomIn(self):
@@ -519,7 +511,6 @@ class Main(QMainWindow, Ui_window):
 #########      Cpoy Text to Clip Board      ##### ... end
 
     def getOutlines(self, doc):
-        #self.treeView.setColumnWidth(2, 30)
         toc = doc.toc()
         if not toc:
             self.dockWidget.hide()
