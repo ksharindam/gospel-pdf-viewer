@@ -9,16 +9,10 @@ Debian Dependency = python-qt4, python-poppler-qt4
 
 Description = A poppler based PDF viewer written in PyQt4
 Changes :
-        Undo Jump Page button added.
-        Fixed : filename not matched in history_filenames list
-        Highlight position adjusted.
-        fixed : list index out of range error when opening second document of less pages
-        fixed : page resize problem when window is resized
-        window size is remembered
-        fixed : hyperlinks positions are dislocated after window resize
-        fixed : Infinite loop in render queue
+        total pages label was integrated with page no. label
+        debug messages removed
 ...........................................................................
-|   Copyright (C) 2016-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2017-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -35,6 +29,7 @@ Changes :
 ...........................................................................
 """
 # TODO: 
+#       Show hyperlink target location at below like a browser
 #       Rotate pages
 #       Show fonts list
 #       Show document info
@@ -45,4 +40,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #       
 
-__version__ = '1.3.10'
+__version__ = '1.3.11'

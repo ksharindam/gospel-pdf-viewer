@@ -17,6 +17,7 @@ from __init__ import __version__
 #from PyQt4 import uic
 #main_ui = uic.loadUiType("main_window.ui")
 
+DEBUG = False
 SCREEN_DPI = 100
 HOMEDIR = environ["HOME"]
 
@@ -146,9 +147,6 @@ class Main(QMainWindow, Ui_window):
         self.menuNavigate.addAction(self.nextPageAction)
         self.menuNavigate.addAction(self.undoJumpAction)
         # Create widgets for menubar / toolbar
-        self.totalPagesLabel = QLabel(self)
-        self.totalPagesLabel.setMinimumWidth(100)
-        self.menubar.setCornerWidget(self.totalPagesLabel)
         self.gotoPageEdit = QLineEdit(self)
         self.gotoPageEdit.setPlaceholderText("Jump to page...")
         self.gotoPageEdit.setMaximumWidth(120)
@@ -287,8 +285,7 @@ class Main(QMainWindow, Ui_window):
         #            (self.available_area[1]-(self.height()+self.offset_y+self.offset_x))/2 )
         #scrolbar_pos = self.pages[self.current_page].pos().y()
         #self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
-        self.totalPagesLabel.setText("Total "+str(self.total_pages)+" pages")
-        self.pageNoLabel.setText(str(self.current_page+1))
+        self.pageNoLabel.setText('<b>%i/%i</b>' % (self.current_page+1, self.total_pages) )
         self.gotoPageValidator.setTop(self.total_pages)
         self.setWindowTitle(path.basename(self.filename)+ " - Gospel PDF " + __version__)
         if self.current_page != 0 : QtCore.QTimer.singleShot(300, self.jumpToCurrentPage)
@@ -309,7 +306,7 @@ class Main(QMainWindow, Ui_window):
             self.pages[self.rendered_pages[0]].clear()
             self.pages[self.rendered_pages[0]].jumpToRequested.disconnect(self.jumpToPage)
             self.rendered_pages.pop(0)
-        print page_no, self.rendered_pages
+        if DEBUG : print page_no, self.rendered_pages
 
     def renderCurrentPage(self):
         """ Requests to render current page. if it is already rendered, then request
@@ -321,14 +318,14 @@ class Main(QMainWindow, Ui_window):
                 self.renderRequested.emit(page_no, self.pages[page_no].dpi)
                 self.pages[page_no].jumpToRequested.connect(self.jumpToPage)
                 requested += 1
-                print page_no
+                if DEBUG : print page_no
                 if requested == 2: return
 
     def onMouseScroll(self, pos):
         """ Gets the current page number on scrolling, then requests to render"""
         index = self.verticalLayout.indexOf(self.frame.childAt(self.frame.width()/2, pos))
         if index == -1: return
-        self.pageNoLabel.setText('<b>' + str(index+1) + '</b>')
+        self.pageNoLabel.setText('<b>%i/%i</b>' % (index+1, self.total_pages) )
         if self.scrollArea.verticalScrollBar().isSliderDown() or self.scroll_render_lock : return
         self.current_page = index
         self.renderCurrentPage()
