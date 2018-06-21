@@ -218,6 +218,7 @@ class Main(QMainWindow, Ui_window):
         self.thread2.start()
         # Initialize Variables
         self.filename = ''
+        self.current_page = 0
         self.pages = []
         self.jumped_from = None
         self.max_preload = 1
@@ -261,8 +262,9 @@ class Main(QMainWindow, Ui_window):
         self.getOutlines(self.doc)
         # Load Document in other threads
         self.loadFileRequested.emit(filename, password)
-        try : self.current_page = int(self.history_page_no[self.history_filenames.index(self.filename)])
-        except : self.current_page = 0
+        if self.filename in self.history_filenames:
+            self.current_page = int(self.history_page_no[self.history_filenames.index(self.filename)])
+        self.current_page = min(self.current_page, self.total_pages-1)
         self.scroll_render_lock = False
         # Add widgets
         self.frame = QFrame(self.scrollAreaWidgetContents)
