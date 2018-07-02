@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Gospel PDF</string>
+   <string>Gospel PDF Viewer</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/pdf.png</normaloff>:/pdf.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -29,7 +33,7 @@
          <x>0</x>
          <y>0</y>
          <width>397</width>
-         <height>380</height>
+         <height>384</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -48,23 +52,30 @@
      <x>0</x>
      <y>0</y>
      <width>663</width>
-     <height>24</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="openFileAction"/>
+    <addaction name="quitAction"/>
    </widget>
    <widget class="QMenu" name="menuNavigate">
     <property name="title">
      <string>Navigate</string>
     </property>
+    <addaction name="prevPageAction"/>
+    <addaction name="nextPageAction"/>
+    <addaction name="undoJumpAction"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
      <string>&amp;View</string>
     </property>
+    <addaction name="zoominAction"/>
+    <addaction name="zoomoutAction"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -153,7 +164,93 @@
     </layout>
    </widget>
   </widget>
+  <action name="openFileAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/open.png</normaloff>:/open.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="quitAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/quit.png</normaloff>:/quit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="zoominAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/zoomin.png</normaloff>:/zoomin.png</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom In</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl++</string>
+   </property>
+  </action>
+  <action name="zoomoutAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/zoomout.png</normaloff>:/zoomout.png</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom Out</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+-</string>
+   </property>
+  </action>
+  <action name="prevPageAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/prev.png</normaloff>:/prev.png</iconset>
+   </property>
+   <property name="text">
+    <string>Prev Page</string>
+   </property>
+   <property name="shortcut">
+    <string>Left</string>
+   </property>
+  </action>
+  <action name="nextPageAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/next.png</normaloff>:/next.png</iconset>
+   </property>
+   <property name="text">
+    <string>Next Page</string>
+   </property>
+   <property name="shortcut">
+    <string>Right</string>
+   </property>
+  </action>
+  <action name="undoJumpAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/undo-jump.png</normaloff>:/undo-jump.png</iconset>
+   </property>
+   <property name="text">
+    <string>Jump Back</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+Backspace</string>
+   </property>
+  </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -14,5 +14,6 @@
     <file>undo-jump.png</file>
     <file>copy.png</file>
     <file>search.png</file>
+    <file>pdf.png</file>
   </qresource>
 </RCC>

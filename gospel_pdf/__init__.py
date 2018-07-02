@@ -9,7 +9,9 @@ Debian Dependency = python-qt4, python-poppler-qt4
 
 Description = A poppler based PDF viewer written in PyQt4
 Changes :
-        fixed : black page when opening a file with same name but lesser pages
+1.3.12  fixed : black page when opening a file with same name but lesser pages
+1.3.13  window icon added
+
 ...........................................................................
 |   Copyright (C) 2017-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
@@ -39,4 +41,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #       
 
-__version__ = '1.3.12'
+__version__ = '1.3.13'

@@ -10,7 +10,7 @@ from PyQt4.QtGui import QFileDialog, QInputDialog, QAction, QIcon, QLineEdit, QS
 from PyQt4.QtGui import QIntValidator, QComboBox, QPainter, QColor, QMessageBox
 #from PyQt4.QtGui import QDesktopServices
 from popplerqt4 import Poppler
-import resources
+import resources_rc
 from ui_main_window import Ui_window
 from __init__ import __version__
 
@@ -105,47 +105,25 @@ class Main(QMainWindow, Ui_window):
         self.resize_page_timer.setSingleShot(True)
         self.resize_page_timer.timeout.connect(self.onWindowResize)
         # Add shortcut actions
-        self.openFileAction = QAction(QIcon(":/open.png"), "Open", self)
-        self.openFileAction.setShortcut("Ctrl+O")
-        self.openFileAction.triggered.connect(self.openFile)
-        self.quitAction = QAction(QIcon(":/quit.png"), "Quit", self)
-        self.quitAction.setShortcut("Ctrl+Q")
-        self.quitAction.triggered.connect(self.close)
         self.firstPageAction = QAction(QIcon(":/go-first.png"), "First Page", self)
         self.firstPageAction.triggered.connect(self.goFirstPage)
-        self.prevPageAction = QAction(QIcon(":/prev.png"), "Prev Page", self)
-        self.prevPageAction.setShortcut("Left")
-        self.prevPageAction.triggered.connect(self.goPrevPage)
-        self.nextPageAction = QAction(QIcon(":/next.png"), "Next Page", self)
-        self.nextPageAction.setShortcut("Right")
-        self.nextPageAction.triggered.connect(self.goNextPage)
         self.lastPageAction = QAction(QIcon(":/go-last.png"), "Last Page", self)
         self.lastPageAction.triggered.connect(self.goLastPage)
         self.gotoPageAction = QAction(QIcon(":/goto.png"), "GoTo Page", self)
         self.gotoPageAction.triggered.connect(self.gotoPage)
-        self.undoJumpAction = QAction(QIcon(":/undo-jump.png"), "Jump Back", self)
-        self.undoJumpAction.setShortcut("Shift+Backspace")
-        self.undoJumpAction.triggered.connect(self.undoJump)
-        self.zoominAction = QAction(QIcon(":/zoomin.png"), "Zoom In", self)
-        self.zoominAction.setShortcut("Ctrl++")
-        self.zoominAction.triggered.connect(self.zoomIn)
-        self.zoomoutAction = QAction(QIcon(":/zoomout.png"), "Zoom Out", self)
-        self.zoomoutAction.setShortcut("Ctrl+-")
-        self.zoomoutAction.triggered.connect(self.zoomOut)
         self.copyTextAction = QAction(QIcon(":/copy.png"), "Copy Text", self)
         self.copyTextAction.setCheckable(True)
         self.copyTextAction.triggered.connect(self.toggleCopyText)
         self.findTextAction = QAction(QIcon(":/search.png"), "Find Text", self)
         self.findTextAction.setShortcut('Ctrl+F')
         self.findTextAction.triggered.connect(self.dockSearch.show)
-        # Create menu actions
-        self.menuFile.addAction(self.openFileAction)
-        self.menuFile.addAction(self.quitAction)
-        self.menuView.addAction(self.zoominAction)
-        self.menuView.addAction(self.zoomoutAction)
-        self.menuNavigate.addAction(self.prevPageAction)
-        self.menuNavigate.addAction(self.nextPageAction)
-        self.menuNavigate.addAction(self.undoJumpAction)
+        self.openFileAction.triggered.connect(self.openFile)
+        self.quitAction.triggered.connect(self.close)
+        self.zoominAction.triggered.connect(self.zoomIn)
+        self.zoomoutAction.triggered.connect(self.zoomOut)
+        self.prevPageAction.triggered.connect(self.goPrevPage)
+        self.nextPageAction.triggered.connect(self.goNextPage)
+        self.undoJumpAction.triggered.connect(self.undoJump)
         # Create widgets for menubar / toolbar
         self.gotoPageEdit = QLineEdit(self)
         self.gotoPageEdit.setPlaceholderText("Jump to page...")
