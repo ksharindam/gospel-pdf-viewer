@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
-from os import path, environ
+import sys, os
 from subprocess import Popen
 from PyQt4 import QtCore
 from PyQt4.QtGui import QApplication, QMainWindow, QPixmap, QImage, QWidget, QFrame, QVBoxLayout, QLabel
@@ -19,7 +18,7 @@ from __init__ import __version__
 
 DEBUG = False
 SCREEN_DPI = 100
-HOMEDIR = environ["HOME"]
+HOMEDIR = os.environ["HOME"]
 
 #def pt2pixel(point, dpi):
 #    return dpi*point/72.0
@@ -119,6 +118,7 @@ class Main(QMainWindow, Ui_window):
         self.findTextAction.triggered.connect(self.dockSearch.show)
         self.openFileAction.triggered.connect(self.openFile)
         self.quitAction.triggered.connect(self.close)
+        self.toPSAction.triggered.connect(self.exportToPS)
         self.zoominAction.triggered.connect(self.zoomIn)
         self.zoomoutAction.triggered.connect(self.zoomOut)
         self.prevPageAction.triggered.connect(self.goPrevPage)
@@ -267,7 +267,7 @@ class Main(QMainWindow, Ui_window):
         #self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
         self.pageNoLabel.setText('<b>%i/%i</b>' % (self.current_page+1, self.total_pages) )
         self.gotoPageValidator.setTop(self.total_pages)
-        self.setWindowTitle(path.basename(self.filename)+ " - Gospel PDF " + __version__)
+        self.setWindowTitle(os.path.basename(self.filename)+ " - Gospel PDF " + __version__)
         if self.current_page != 0 : QtCore.QTimer.singleShot(300, self.jumpToCurrentPage)
 
     def setRenderedImage(self, page_no, image):
@@ -314,11 +314,29 @@ class Main(QMainWindow, Ui_window):
         self.onMouseScroll(self.scrollArea.verticalScrollBar().value())
 
     def openFile(self):
-        filename = QFileDialog.getOpenFileName(self.centralwidget.window(),
+        filename = QFileDialog.getSaveFileName(self,
                                       "Select Document to Open", "",
                                       "Portable Document Format (*.pdf)" )
         if not filename.isEmpty():
             self.loadPDFfile(filename)
+
+    def exportToPS(self):
+        width = self.doc.page(self.current_page).pageSizeF().width()
+        height = self.doc.page(self.current_page).pageSizeF().height()
+        filename = QFileDialog.getSaveFileName(self, "Select File to Save",
+                                       os.path.splitext(self.filename)[0]+'.ps',
+                                      "Adobe Postscript Format (*.ps)" )
+        if filename == '' : return
+        conv = self.doc.psConverter()
+        conv.setPaperWidth(width)
+        conv.setPaperHeight(height)
+        conv.setOutputFileName(filename)
+        conv.setPageList([i+1 for i in range(self.total_pages)])
+        ok = conv.convert()
+        if ok:
+            QMessageBox.information(self, "Successful !","File has been successfully exported")
+        else:
+            QMessageBox.warning(self, "Failed !","Failed to export to Postscript")
 
     def jumpToCurrentPage(self):
         scrolbar_pos = self.pages[self.current_page].pos().y()
@@ -371,7 +389,7 @@ class Main(QMainWindow, Ui_window):
         page_dpi = self.zoom_levels[self.zoomLevelCombo.currentIndex()]*SCREEN_DPI/100
         fixed_width = self.availableWidth()
         for i in range(self.total_pages):
-            pg_width = self.doc.page(i).pageSizeF().width()
+            pg_width = self.doc.page(i).pageSizeF().width() # width in points
             pg_height = self.doc.page(i).pageSizeF().height()
             if self.zoomLevelCombo.currentIndex() == 0: # if fixed width
                 dpi = 72.0*fixed_width/pg_width
@@ -498,7 +516,7 @@ class Main(QMainWindow, Ui_window):
         node = toc.firstChild()
         loadOutline(doc, node, parent_item)
         self.treeView.setModel(outline_model)
-        self.treeView.expandToDepth(0)
+        #self.treeView.expandToDepth(0)
         self.treeView.setHeaderHidden(True)
         self.treeView.header().setResizeMode(0, 1)
         self.treeView.header().setResizeMode(1, 3)
@@ -513,13 +531,13 @@ class Main(QMainWindow, Ui_window):
         QMainWindow.resizeEvent(self, ev)
         if self.filename == '' : return
         if self.zoomLevelCombo.currentIndex() == 0:
-            self.resize_page_timer.start(500)
+            self.resize_page_timer.start(200)
 
     def onWindowResize(self):
         for i in range(self.total_pages):
             self.pages[i].annots_listed = False # Clears prev link annotation positions
         self.resizePages()
-        wait(50)
+        wait(300)
         self.jumpToCurrentPage()
         if not self.isMaximized():
             self.settings.setValue("WindowWidth", self.width())
@@ -688,8 +706,8 @@ def wait(millisec):
 def main():
     app = QApplication(sys.argv)
     win = Main()
-    if len(sys.argv)>1 and path.exists(path.abspath(sys.argv[-1])):
-        win.loadPDFfile(QtCore.QString.fromUtf8(path.abspath(sys.argv[-1])))
+    if len(sys.argv)>1 and os.path.exists(os.path.abspath(sys.argv[-1])):
+        win.loadPDFfile(QtCore.QString.fromUtf8(os.path.abspath(sys.argv[-1])))
     app.aboutToQuit.connect(win.onAppQuit)
     sys.exit(app.exec_())
 

@@ -9,8 +9,7 @@ Debian Dependency = python-qt4, python-poppler-qt4
 
 Description = A poppler based PDF viewer written in PyQt4
 Changes :
-1.3.12  fixed : black page when opening a file with same name but lesser pages
-1.3.13  window icon added
+1.4.0   added : Export to Postscript
 
 ...........................................................................
 |   Copyright (C) 2017-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -34,11 +33,11 @@ Changes :
 #       Rotate pages
 #       Show fonts list
 #       Show document info
-#       Print File
 #       Recent files list, clear recent option, clear history files
 #       add highlight annotation
+#       password manager
 # FIXME : 
 #       Search is not cancelled immediately, when cancel is pressed
 #       
 
-__version__ = '1.3.13'
+__version__ = '1.4.0'

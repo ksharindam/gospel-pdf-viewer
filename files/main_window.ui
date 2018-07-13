@@ -59,7 +59,14 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <widget class="QMenu" name="menuExport">
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <addaction name="toPSAction"/>
+    </widget>
     <addaction name="openFileAction"/>
+    <addaction name="menuExport"/>
     <addaction name="quitAction"/>
    </widget>
    <widget class="QMenu" name="menuNavigate">
@@ -246,6 +253,19 @@
    </property>
    <property name="shortcut">
     <string>Shift+Backspace</string>
+   </property>
+  </action>
+  <action name="saveFileAction">
+   <property name="text">
+    <string>Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="toPSAction">
+   <property name="text">
+    <string>to PostScript</string>
    </property>
   </action>
  </widget>
