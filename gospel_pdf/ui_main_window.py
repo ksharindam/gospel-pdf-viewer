@@ -140,9 +140,12 @@ class Ui_window(object):
         self.saveFileAction.setObjectName(_fromUtf8("saveFileAction"))
         self.toPSAction = QtGui.QAction(window)
         self.toPSAction.setObjectName(_fromUtf8("toPSAction"))
+        self.docInfoAction = QtGui.QAction(window)
+        self.docInfoAction.setObjectName(_fromUtf8("docInfoAction"))
         self.menuExport.addAction(self.toPSAction)
         self.menuFile.addAction(self.openFileAction)
         self.menuFile.addAction(self.menuExport.menuAction())
+        self.menuFile.addAction(self.docInfoAction)
         self.menuFile.addAction(self.quitAction)
         self.menuNavigate.addAction(self.prevPageAction)
         self.menuNavigate.addAction(self.nextPageAction)
@@ -183,5 +186,6 @@ class Ui_window(object):
         self.saveFileAction.setText(_translate("window", "Save", None))
         self.saveFileAction.setShortcut(_translate("window", "Ctrl+S", None))
         self.toPSAction.setText(_translate("window", "to PostScript", None))
+        self.docInfoAction.setText(_translate("window", "Document Info", None))
 
 import resources_rc

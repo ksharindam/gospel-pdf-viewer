@@ -10,6 +10,7 @@ Debian Dependency = python-qt4, python-poppler-qt4
 Description = A poppler based PDF viewer written in PyQt4
 Changes :
 1.4.0   added : Export to Postscript
+1.5.0   added : Show doc info
 
 ...........................................................................
 |   Copyright (C) 2017-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -32,7 +33,6 @@ Changes :
 #       Show hyperlink target location at below like a browser
 #       Rotate pages
 #       Show fonts list
-#       Show document info
 #       Recent files list, clear recent option, clear history files
 #       add highlight annotation
 #       password manager
@@ -40,4 +40,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #       
 
-__version__ = '1.4.0'
+__version__ = '1.5.0'

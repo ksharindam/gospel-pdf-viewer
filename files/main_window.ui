@@ -67,6 +67,7 @@
     </widget>
     <addaction name="openFileAction"/>
     <addaction name="menuExport"/>
+    <addaction name="docInfoAction"/>
     <addaction name="quitAction"/>
    </widget>
    <widget class="QMenu" name="menuNavigate">
@@ -266,6 +267,11 @@
   <action name="toPSAction">
    <property name="text">
     <string>to PostScript</string>
+   </property>
+  </action>
+  <action name="docInfoAction">
+   <property name="text">
+    <string>Document Info</string>
    </property>
   </action>
  </widget>

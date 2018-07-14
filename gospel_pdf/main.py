@@ -4,9 +4,12 @@
 import sys, os
 from subprocess import Popen
 from PyQt4 import QtCore
-from PyQt4.QtGui import QApplication, QMainWindow, QPixmap, QImage, QWidget, QFrame, QVBoxLayout, QLabel
-from PyQt4.QtGui import QFileDialog, QInputDialog, QAction, QIcon, QLineEdit, QStandardItem, QStandardItemModel
-from PyQt4.QtGui import QIntValidator, QComboBox, QPainter, QColor, QMessageBox
+from PyQt4.QtGui import (
+    QApplication, QMainWindow, QPixmap, QImage, QWidget, QFrame, QVBoxLayout, QLabel,
+    QFileDialog, QInputDialog, QAction, QIcon, QLineEdit, QStandardItem, QStandardItemModel,
+    QIntValidator, QComboBox, QPainter, QColor, QMessageBox,
+    QDialog, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton
+)
 #from PyQt4.QtGui import QDesktopServices
 from popplerqt4 import Poppler
 import resources_rc
@@ -119,6 +122,7 @@ class Main(QMainWindow, Ui_window):
         self.openFileAction.triggered.connect(self.openFile)
         self.quitAction.triggered.connect(self.close)
         self.toPSAction.triggered.connect(self.exportToPS)
+        self.docInfoAction.triggered.connect(self.docInfo)
         self.zoominAction.triggered.connect(self.zoomIn)
         self.zoomoutAction.triggered.connect(self.zoomOut)
         self.prevPageAction.triggered.connect(self.goPrevPage)
@@ -337,6 +341,17 @@ class Main(QMainWindow, Ui_window):
             QMessageBox.information(self, "Successful !","File has been successfully exported")
         else:
             QMessageBox.warning(self, "Failed !","Failed to export to Postscript")
+
+    def docInfo(self):
+        info_keys = list(self.doc.infoKeys())
+        values = [unicode(self.doc.info(key)) for key in info_keys]
+        page_size = self.doc.page(self.current_page).pageSizeF()
+        page_size = "%s x %s pts"%(page_size.width(), page_size.height())
+        info_keys += ['Embedded FIles', 'Page Size']
+        values += [str(self.doc.hasEmbeddedFiles()), page_size]
+        dialog = DocInfoDialog(self)
+        dialog.setInfo(info_keys, values)
+        dialog.exec_()
 
     def jumpToCurrentPage(self):
         scrolbar_pos = self.pages[self.current_page].pos().y()
@@ -697,6 +712,30 @@ class PageWidget(QLabel):
             self.setPixmap(img)
         else:
             self.setPixmap(self.image)
+
+class DocInfoDialog(QDialog):
+    def __init__(self, parent):
+        QDialog.__init__(self, parent)
+        self.resize(560, 320)
+        self.tableWidget = QTableWidget(0, 2, self)
+        vLayout = QVBoxLayout(self)
+        vLayout.addWidget(self.tableWidget)
+        self.tableWidget.setAlternatingRowColors(True)
+        closeBtn = QPushButton(QIcon(':/quit.png'), "Close", self)
+        closeBtn.setMaximumWidth(120)
+        vLayout.addWidget(closeBtn, 0, QtCore.Qt.AlignRight)
+        closeBtn.clicked.connect(self.accept)
+        self.tableWidget.horizontalHeader().setDefaultSectionSize(150)
+        self.tableWidget.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
+        self.tableWidget.horizontalHeader().setVisible(False)
+        self.tableWidget.verticalHeader().setVisible(False)
+
+    def setInfo(self, info_keys, values):
+        for i in range(len(info_keys)):
+            self.tableWidget.insertRow(i)
+            self.tableWidget.setItem(i,0, QTableWidgetItem(info_keys[i]))
+            self.tableWidget.setItem(i,1, QTableWidgetItem(values[i]))
+
 
 def wait(millisec):
     loop = QtCore.QEventLoop()
