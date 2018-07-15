@@ -11,7 +11,7 @@ Description = A poppler based PDF viewer written in PyQt4
 Changes :
 1.4.0   added : Export to Postscript
 1.5.0   added : Show doc info
-
+1.6.0   added : Show recent files
 ...........................................................................
 |   Copyright (C) 2017-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
@@ -33,11 +33,10 @@ Changes :
 #       Show hyperlink target location at below like a browser
 #       Rotate pages
 #       Show fonts list
-#       Recent files list, clear recent option, clear history files
-#       add highlight annotation
 #       password manager
+#       resize pages when dock is hidden
 # FIXME : 
 #       Search is not cancelled immediately, when cancel is pressed
 #       
 
-__version__ = '1.5.0'
+__version__ = '1.6.0'

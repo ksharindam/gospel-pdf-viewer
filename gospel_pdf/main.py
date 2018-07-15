@@ -98,7 +98,6 @@ class Main(QMainWindow, Ui_window):
         self.dockWidget.hide()
         self.dockWidget.setMinimumWidth(310)
         self.findTextEdit.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.findCloseButton.setIcon(QIcon(':/close.png'))
         self.treeView.setAlternatingRowColors(True)
         self.treeView.clicked.connect(self.onOutlineClick)
         self.first_document = True
@@ -167,6 +166,7 @@ class Main(QMainWindow, Ui_window):
         # Add widgets
         # Impoort settings
         self.settings = QtCore.QSettings("gospel-pdf", "main", self)
+        self.recent_files = list( self.settings.value("RecentFiles", []).toStringList())
         self.history_filenames = list( self.settings.value("HistoryFileNameList", []).toStringList())
         self.history_page_no = list( self.settings.value("HistoryPageNoList", []).toStringList() )
         self.offset_x = int(self.settings.value("OffsetX", 4).toString())
@@ -204,20 +204,37 @@ class Main(QMainWindow, Ui_window):
         self.pages = []
         self.jumped_from = None
         self.max_preload = 1
+        self.recent_files_actions = []
+        self.addRecentFiles()
         # Show Window
         width = int(self.settings.value("WindowWidth").toString())
         height = int(self.settings.value("WindowHeight").toString())
         self.resize(width, height)
         self.show()
 
+    def addRecentFiles(self):
+        self.recent_files_actions[:] = []
+        self.menuRecentFiles.clear()
+        for each in self.recent_files:
+            name = elideMiddle(os.path.basename(unicode(each)), 60)
+            action = self.menuRecentFiles.addAction(name, self.openRecentFile)
+            self.recent_files_actions.append(action)
+        self.menuRecentFiles.addSeparator()
+        self.menuRecentFiles.addAction(QIcon(':/edit-clear.png'), 'Clear Recents', self.clearRecents)
+
+    def openRecentFile(self):
+        action = self.sender()
+        index = self.recent_files_actions.index(action)
+        self.loadPDFfile(self.recent_files[index])
+
+    def clearRecents(self):
+        self.recent_files_actions[:] = []
+        self.menuRecentFiles.clear()
+        self.recent_files[:] = []
+
     def removeOldDoc(self):
         # Save current page number
-        if QtCore.QString(self.filename) in self.history_filenames:
-            index = self.history_filenames.index(self.filename)
-            self.history_page_no[index] = self.current_page
-        else:
-            self.history_filenames.append(self.filename)
-            self.history_page_no.append(self.current_page)
+        self.saveFileData()
         # Remove old document
         for i in range(len(self.pages)):
             self.verticalLayout.removeWidget(self.pages[-1])
@@ -225,9 +242,11 @@ class Main(QMainWindow, Ui_window):
             self.pages.pop().deleteLater()
         self.frame.deleteLater()
         self.jumped_from = None
+        self.addRecentFiles()
 
     def loadPDFfile(self, filename):
         """ Loads pdf document in all threads """
+        filename = os.path.expanduser(unicode(filename))
         self.doc = Poppler.Document.load(filename)
         if not self.doc : return
         password = ''
@@ -237,15 +256,15 @@ class Main(QMainWindow, Ui_window):
             self.doc.unlock(password, password)
         if not self.first_document:
             self.removeOldDoc()
-        self.filename = unicode(filename)
+        self.filename = filename
         self.total_pages = self.doc.numPages()
         self.rendered_pages = []
         self.first_document = False
         self.getOutlines(self.doc)
         # Load Document in other threads
-        self.loadFileRequested.emit(filename, password)
-        if self.filename in self.history_filenames:
-            self.current_page = int(self.history_page_no[self.history_filenames.index(self.filename)])
+        self.loadFileRequested.emit(self.filename, password)
+        if collapseUser(self.filename) in self.history_filenames:
+            self.current_page = int(self.history_page_no[self.history_filenames.index(collapseUser(self.filename))])
         self.current_page = min(self.current_page, self.total_pages-1)
         self.scroll_render_lock = False
         # Add widgets
@@ -264,11 +283,6 @@ class Main(QMainWindow, Ui_window):
             self.verticalLayout.addWidget(page, 0, QtCore.Qt.AlignCenter)
             self.pages.append(page)
         self.resizePages()
-        # Resize window
-        #self.move((self.available_area[0]-(self.width()+2*self.offset_x))/2,
-        #            (self.available_area[1]-(self.height()+self.offset_y+self.offset_x))/2 )
-        #scrolbar_pos = self.pages[self.current_page].pos().y()
-        #self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
         self.pageNoLabel.setText('<b>%i/%i</b>' % (self.current_page+1, self.total_pages) )
         self.gotoPageValidator.setTop(self.total_pages)
         self.setWindowTitle(os.path.basename(self.filename)+ " - Gospel PDF " + __version__)
@@ -318,9 +332,9 @@ class Main(QMainWindow, Ui_window):
         self.onMouseScroll(self.scrollArea.verticalScrollBar().value())
 
     def openFile(self):
-        filename = QFileDialog.getSaveFileName(self,
+        filename = QFileDialog.getOpenFileName(self,
                                       "Select Document to Open", "",
-                                      "Portable Document Format (*.pdf)" )
+                                      "Portable Document Format (*.pdf);;All Files (*)" )
         if not filename.isEmpty():
             self.loadPDFfile(filename)
 
@@ -558,20 +572,28 @@ class Main(QMainWindow, Ui_window):
             self.settings.setValue("WindowWidth", self.width())
             self.settings.setValue("WindowHeight", self.height())
 
+    def saveFileData(self):
+        if self.filename != '':
+            filename = collapseUser(self.filename)
+            if filename in self.history_filenames:
+                index = self.history_filenames.index(filename)
+                self.history_page_no[index] = self.current_page
+            else:
+                self.history_filenames.append(filename)
+                self.history_page_no.append(self.current_page)
+            if filename in self.recent_files:
+                self.recent_files.remove(filename)
+            self.recent_files.insert(0, filename)
+
     def closeEvent(self, ev):
         """ Save all settings on window close """
+        self.saveFileData()
         self.settings.setValue("OffsetX", self.geometry().x()-self.x())
         self.settings.setValue("OffsetY", self.geometry().y()-self.y())
         self.settings.setValue("ZoomLevel", self.zoomLevelCombo.currentIndex())
-        if self.filename != '':
-            if QtCore.QString(self.filename) in self.history_filenames:
-                index = self.history_filenames.index(self.filename)
-                self.history_page_no[index] = self.current_page
-            else:
-                self.history_filenames.append(self.filename)
-                self.history_page_no.append(self.current_page)
         self.settings.setValue("HistoryFileNameList", self.history_filenames)
         self.settings.setValue("HistoryPageNoList", self.history_page_no)
+        self.settings.setValue("RecentFiles", self.recent_files[:10])
         return super(Main, self).closeEvent(ev)
 
     def onAppQuit(self):
@@ -741,6 +763,16 @@ def wait(millisec):
     loop = QtCore.QEventLoop()
     QtCore.QTimer.singleShot(millisec, loop.quit)
     loop.exec_()
+
+def collapseUser(path):
+    path = unicode(path)
+    if path.startswith(HOMEDIR):
+        return path.replace(HOMEDIR, '~', 1)
+    return path
+
+def elideMiddle(text, length):
+    if len(text) <= length: return text
+    return text[:length//2] + '...' + text[len(text)-length+length//2:]
 
 def main():
     app = QApplication(sys.argv)

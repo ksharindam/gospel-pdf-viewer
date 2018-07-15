@@ -33,7 +33,7 @@
          <x>0</x>
          <y>0</y>
          <width>397</width>
-         <height>384</height>
+         <height>376</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -63,9 +63,23 @@
      <property name="title">
       <string>Export</string>
      </property>
+     <property name="icon">
+      <iconset resource="resources.qrc">
+       <normaloff>:/export.png</normaloff>:/export.png</iconset>
+     </property>
      <addaction name="toPSAction"/>
     </widget>
+    <widget class="QMenu" name="menuRecentFiles">
+     <property name="title">
+      <string>Recent Files</string>
+     </property>
+     <property name="icon">
+      <iconset resource="resources.qrc">
+       <normaloff>:/recents.png</normaloff>:/recents.png</iconset>
+     </property>
+    </widget>
     <addaction name="openFileAction"/>
+    <addaction name="menuRecentFiles"/>
     <addaction name="menuExport"/>
     <addaction name="docInfoAction"/>
     <addaction name="quitAction"/>
@@ -167,6 +181,16 @@
        <property name="text">
         <string/>
        </property>
+       <property name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/cancel.png</normaloff>:/cancel.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
     </layout>
@@ -265,13 +289,26 @@
    </property>
   </action>
   <action name="toPSAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/postscript.png</normaloff>:/postscript.png</iconset>
+   </property>
    <property name="text">
     <string>to PostScript</string>
    </property>
   </action>
   <action name="docInfoAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/info.png</normaloff>:/info.png</iconset>
+   </property>
    <property name="text">
     <string>Document Info</string>
+   </property>
+  </action>
+  <action name="actionClear">
+   <property name="text">
+    <string>clear</string>
    </property>
   </action>
  </widget>
