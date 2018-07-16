@@ -545,7 +545,8 @@ class Main(QMainWindow, Ui_window):
         node = toc.firstChild()
         loadOutline(doc, node, parent_item)
         self.treeView.setModel(outline_model)
-        #self.treeView.expandToDepth(0)
+        if parent_item.rowCount() < 3:
+            self.treeView.expandToDepth(0)
         self.treeView.setHeaderHidden(True)
         self.treeView.header().setResizeMode(0, 1)
         self.treeView.header().setResizeMode(1, 3)
