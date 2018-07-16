@@ -145,9 +145,9 @@ class Main(QMainWindow, Ui_window):
         # Add toolbar actions
         self.toolBar.addAction(self.openFileAction)
         self.toolBar.addSeparator()
-        self.toolBar.addAction(self.zoominAction)
-        self.toolBar.addWidget(self.zoomLevelCombo)
         self.toolBar.addAction(self.zoomoutAction)
+        self.toolBar.addWidget(self.zoomLevelCombo)
+        self.toolBar.addAction(self.zoominAction)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.firstPageAction)
         self.toolBar.addAction(self.prevPageAction)
@@ -579,8 +579,8 @@ class Main(QMainWindow, Ui_window):
                 index = self.history_filenames.index(filename)
                 self.history_page_no[index] = self.current_page
             else:
-                self.history_filenames.append(filename)
-                self.history_page_no.append(self.current_page)
+                self.history_filenames.insert(0, filename)
+                self.history_page_no.insert(0, self.current_page)
             if filename in self.recent_files:
                 self.recent_files.remove(filename)
             self.recent_files.insert(0, filename)
@@ -591,8 +591,8 @@ class Main(QMainWindow, Ui_window):
         self.settings.setValue("OffsetX", self.geometry().x()-self.x())
         self.settings.setValue("OffsetY", self.geometry().y()-self.y())
         self.settings.setValue("ZoomLevel", self.zoomLevelCombo.currentIndex())
-        self.settings.setValue("HistoryFileNameList", self.history_filenames)
-        self.settings.setValue("HistoryPageNoList", self.history_page_no)
+        self.settings.setValue("HistoryFileNameList", self.history_filenames[:100])
+        self.settings.setValue("HistoryPageNoList", self.history_page_no[:100])
         self.settings.setValue("RecentFiles", self.recent_files[:10])
         return super(Main, self).closeEvent(ev)
 
@@ -765,6 +765,7 @@ def wait(millisec):
     loop.exec_()
 
 def collapseUser(path):
+    ''' converts /home/user/file.ext to ~/file.ext '''
     path = unicode(path)
     if path.startswith(HOMEDIR):
         return path.replace(HOMEDIR, '~', 1)

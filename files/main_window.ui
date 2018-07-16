@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="resources.qrc">
-    <normaloff>:/pdf.png</normaloff>:/pdf.png</iconset>
+    <normaloff>:/adobe.png</normaloff>:/adobe.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -291,7 +291,7 @@
   <action name="toPSAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/postscript.png</normaloff>:/postscript.png</iconset>
+     <normaloff>:/adobe.png</normaloff>:/adobe.png</iconset>
    </property>
    <property name="text">
     <string>to PostScript</string>
