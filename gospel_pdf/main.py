@@ -286,7 +286,7 @@ class Main(QMainWindow, Ui_window):
         self.pageNoLabel.setText('<b>%i/%i</b>' % (self.current_page+1, self.total_pages) )
         self.gotoPageValidator.setTop(self.total_pages)
         self.setWindowTitle(os.path.basename(self.filename)+ " - Gospel PDF " + __version__)
-        if self.current_page != 0 : QtCore.QTimer.singleShot(300, self.jumpToCurrentPage)
+        if self.current_page != 0 : QtCore.QTimer.singleShot(500, self.jumpToCurrentPage)
 
     def setRenderedImage(self, page_no, image):
         """ takes a QImage and sets pixmap of the specified page 
