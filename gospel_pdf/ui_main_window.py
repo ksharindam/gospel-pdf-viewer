@@ -160,6 +160,12 @@ class Ui_window(object):
         self.docInfoAction.setObjectName(_fromUtf8("docInfoAction"))
         self.actionClear = QtGui.QAction(window)
         self.actionClear.setObjectName(_fromUtf8("actionClear"))
+        self.pageToImageAction = QtGui.QAction(window)
+        icon12 = QtGui.QIcon()
+        icon12.addPixmap(QtGui.QPixmap(_fromUtf8(":/image.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.pageToImageAction.setIcon(icon12)
+        self.pageToImageAction.setObjectName(_fromUtf8("pageToImageAction"))
+        self.menuExport.addAction(self.pageToImageAction)
         self.menuExport.addAction(self.toPSAction)
         self.menuFile.addAction(self.openFileAction)
         self.menuFile.addAction(self.menuRecentFiles.menuAction())
@@ -208,5 +214,6 @@ class Ui_window(object):
         self.toPSAction.setText(_translate("window", "to PostScript", None))
         self.docInfoAction.setText(_translate("window", "Document Info", None))
         self.actionClear.setText(_translate("window", "clear", None))
+        self.pageToImageAction.setText(_translate("window", "Page to Image", None))
 
 import resources_rc

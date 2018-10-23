@@ -13,6 +13,7 @@ Changes :
 1.5.0   added : Show doc info
 1.6.0   added : Show recent files
 1.6.1   fixed : Jump to current page issue
+1.7.0   added : Export page to image
 ...........................................................................
 |   Copyright (C) 2017-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
@@ -40,4 +41,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #       
 
-__version__ = '1.6.1'
+__version__ = '1.7.0'

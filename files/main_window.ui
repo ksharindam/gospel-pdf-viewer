@@ -67,6 +67,7 @@
       <iconset resource="resources.qrc">
        <normaloff>:/export.png</normaloff>:/export.png</iconset>
      </property>
+     <addaction name="pageToImageAction"/>
      <addaction name="toPSAction"/>
     </widget>
     <widget class="QMenu" name="menuRecentFiles">
@@ -309,6 +310,15 @@
   <action name="actionClear">
    <property name="text">
     <string>clear</string>
+   </property>
+  </action>
+  <action name="pageToImageAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/image.png</normaloff>:/image.png</iconset>
+   </property>
+   <property name="text">
+    <string>Page to Image</string>
    </property>
   </action>
  </widget>

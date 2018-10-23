@@ -8,13 +8,14 @@ from PyQt4.QtGui import (
     QApplication, QMainWindow, QPixmap, QImage, QWidget, QFrame, QVBoxLayout, QLabel,
     QFileDialog, QInputDialog, QAction, QIcon, QLineEdit, QStandardItem, QStandardItemModel,
     QIntValidator, QComboBox, QPainter, QColor, QMessageBox,
-    QDialog, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton
+    QDialog
 )
 #from PyQt4.QtGui import QDesktopServices
 from popplerqt4 import Poppler
 import resources_rc
-from ui_main_window import Ui_window
 from __init__ import __version__
+from ui_main_window import Ui_window
+from  dialogs import ExportToImageDialog, DocInfoDialog
 
 #from PyQt4 import uic
 #main_ui = uic.loadUiType("main_window.ui")
@@ -121,6 +122,7 @@ class Main(QMainWindow, Ui_window):
         self.openFileAction.triggered.connect(self.openFile)
         self.quitAction.triggered.connect(self.close)
         self.toPSAction.triggered.connect(self.exportToPS)
+        self.pageToImageAction.triggered.connect(self.exportPageToImage)
         self.docInfoAction.triggered.connect(self.docInfo)
         self.zoominAction.triggered.connect(self.zoomIn)
         self.zoomoutAction.triggered.connect(self.zoomOut)
@@ -256,6 +258,8 @@ class Main(QMainWindow, Ui_window):
             self.doc.unlock(password, password)
         if not self.first_document:
             self.removeOldDoc()
+        self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
+                               Poppler.Document.Antialiasing | 0x00000020 )
         self.filename = filename
         self.total_pages = self.doc.numPages()
         self.rendered_pages = []
@@ -355,6 +359,21 @@ class Main(QMainWindow, Ui_window):
             QMessageBox.information(self, "Successful !","File has been successfully exported")
         else:
             QMessageBox.warning(self, "Failed !","Failed to export to Postscript")
+
+    def exportPageToImage(self):
+        dialog = ExportToImageDialog(self.current_page, self.total_pages, self)
+        if dialog.exec_() == QDialog.Accepted:
+            try:
+                dpi = int(dialog.dpiEdit.text())
+                page_no = dialog.pageNoSpin.value()
+                filename = os.path.splitext(self.filename)[0]+'-'+str(page_no)+'.jpg'
+                page = self.doc.page(page_no-1)
+                if not page : return
+                img = page.renderToImage(dpi, dpi)
+                img.save(filename)
+                QMessageBox.information(self, "Successful !","Page has been successfully exported")
+            except:
+                QMessageBox.warning(self, "Failed !","Failed to export to Image")
 
     def docInfo(self):
         info_keys = list(self.doc.infoKeys())
@@ -545,7 +564,7 @@ class Main(QMainWindow, Ui_window):
         node = toc.firstChild()
         loadOutline(doc, node, parent_item)
         self.treeView.setModel(outline_model)
-        if parent_item.rowCount() < 3:
+        if parent_item.rowCount() < 4:
             self.treeView.expandToDepth(0)
         self.treeView.setHeaderHidden(True)
         self.treeView.header().setResizeMode(0, 1)
@@ -735,29 +754,6 @@ class PageWidget(QLabel):
             self.setPixmap(img)
         else:
             self.setPixmap(self.image)
-
-class DocInfoDialog(QDialog):
-    def __init__(self, parent):
-        QDialog.__init__(self, parent)
-        self.resize(560, 320)
-        self.tableWidget = QTableWidget(0, 2, self)
-        vLayout = QVBoxLayout(self)
-        vLayout.addWidget(self.tableWidget)
-        self.tableWidget.setAlternatingRowColors(True)
-        closeBtn = QPushButton(QIcon(':/quit.png'), "Close", self)
-        closeBtn.setMaximumWidth(120)
-        vLayout.addWidget(closeBtn, 0, QtCore.Qt.AlignRight)
-        closeBtn.clicked.connect(self.accept)
-        self.tableWidget.horizontalHeader().setDefaultSectionSize(150)
-        self.tableWidget.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
-        self.tableWidget.horizontalHeader().setVisible(False)
-        self.tableWidget.verticalHeader().setVisible(False)
-
-    def setInfo(self, info_keys, values):
-        for i in range(len(info_keys)):
-            self.tableWidget.insertRow(i)
-            self.tableWidget.setItem(i,0, QTableWidgetItem(info_keys[i]))
-            self.tableWidget.setItem(i,1, QTableWidgetItem(values[i]))
 
 
 def wait(millisec):
