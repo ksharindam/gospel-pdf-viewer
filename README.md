@@ -16,9 +16,6 @@ Gospel PDF will be automatically added to application menu.
 To uninstall run..  
 `sudo pip uninstall gospel-pdf`
 
-### Download .deb Package
-You can directly download debian package for debian based distros and install it.  
-Download it [here](https://github.com/ksharindam/gospel-pdf-viewer/releases)  
 
 ### Usage
 To run after installing, type command..  

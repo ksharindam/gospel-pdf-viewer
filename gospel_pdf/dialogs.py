@@ -1,6 +1,8 @@
 
 # -*- coding: utf-8 -*-
-#import os
+import time
+from email.utils import parsedate_tz, mktime_tz
+
 from PyQt4 import QtCore
 from PyQt4.QtGui import ( QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QSpinBox,
     QLabel, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QIcon,
@@ -20,23 +22,17 @@ class ExportToImageDialog(QDialog):
         pageNoLabel = QLabel('Page No. :', self)
         self.pageNoSpin = QSpinBox(self)
         self.pageNoSpin.setAlignment(QtCore.Qt.AlignHCenter)
-        #filenameLabel = QLabel('Filename :', self)
-        #self.filenameEdit = QLineEdit(self)
         self.buttonBox = QDialogButtonBox(self)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         layout.addWidget(dpiLabel, 0,0,1,1)
         layout.addWidget(self.dpiEdit, 0,1,1,1)
         layout.addWidget(pageNoLabel, 1,0,1,1)
         layout.addWidget(self.pageNoSpin, 1,1,1,1)
-        #layout.addWidget(filenameLabel, 2,0,1,1)
-        #layout.addWidget(self.filenameEdit, 2,1,1,1)
         layout.addWidget(self.buttonBox, 2, 0, 1, 2)
 
         # set values
         self.pageNoSpin.setRange(1, total_pages)
         self.pageNoSpin.setValue(page_no+1)
-        #filename = os.path.splitext(filename)[0]+'.jpg'
-        #self.filenameEdit.setText(filename)
         # connect signals
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
@@ -61,8 +57,17 @@ class DocInfoDialog(QDialog):
 
     def setInfo(self, info_keys, values):
         for i in range(len(info_keys)):
+            if info_keys[i] in ['ModDate', 'CreationDate']:
+                values[i] = parsePdfTime(values[i])
             self.tableWidget.insertRow(i)
             self.tableWidget.setItem(i,0, QTableWidgetItem(info_keys[i]))
             self.tableWidget.setItem(i,1, QTableWidgetItem(values[i]))
+
+# Takes D:20130501200439+01'00' like format and returns a local timezone based format
+def parsePdfTime(t):
+    ts = time.strptime(t[2:16], "%Y%m%d%H%M%S")
+    rfc2822 = time.strftime("%a, %d %b %Y %H:%M:%S "+t[-5:], ts) # to rfc2822 time format
+    py_time = mktime_tz(parsedate_tz(str(rfc2822)))
+    return time.strftime("%d %b %Y at %I:%M:%S %p", time.localtime(py_time))
 
 
