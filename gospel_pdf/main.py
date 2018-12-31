@@ -86,6 +86,30 @@ class Renderer(QtCore.QObject):
               break
             area = QtCore.QRectF()
 
+
+class Frame(QFrame):
+    def __init__(self, parent, scrollArea):
+        QFrame.__init__(self, parent)
+        self.vScrollbar = scrollArea.verticalScrollBar()
+        self.hScrollbar = scrollArea.horizontalScrollBar()
+        self.setMouseTracking(True)
+        self.clicked = False
+
+    def mousePressEvent(self, ev):
+        self.click_pos = ev.globalPos()
+        self.v_scrollbar_pos = self.vScrollbar.value()
+        self.h_scrollbar_pos = self.hScrollbar.value()
+        self.clicked = True
+
+    def mouseReleaseEvent(self, ev):
+        self.clicked = False
+
+    def mouseMoveEvent(self, ev):
+        if not self.clicked : return
+        self.vScrollbar.setValue(self.v_scrollbar_pos + self.click_pos.y() - ev.globalY())
+        self.hScrollbar.setValue(self.h_scrollbar_pos + self.click_pos.x() - ev.globalX())
+
+
 #class Main(main_ui[0], main_ui[1]):
 class Main(QMainWindow, Ui_window):
     renderRequested = QtCore.pyqtSignal(int, float)
@@ -272,7 +296,7 @@ class Main(QMainWindow, Ui_window):
         self.current_page = min(self.current_page, self.total_pages-1)
         self.scroll_render_lock = False
         # Add widgets
-        self.frame = QFrame(self.scrollAreaWidgetContents)
+        self.frame = Frame(self.scrollAreaWidgetContents, self.scrollArea)
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.verticalLayout = QVBoxLayout(self.frame)
@@ -708,11 +732,12 @@ class PageWidget(QLabel):
             return
 
         # Change cursor if cursor is over link annotation
-        self.unsetCursor()
         for area in self.link_areas:
             if area.contains(ev.pos()): 
                 self.setCursor(QtCore.Qt.PointingHandCursor)
-                break
+                return
+        self.unsetCursor()
+        ev.ignore()         # pass to underlying frame if not over link or copy text mode
 
     def mousePressEvent(self, ev):
         #if self.cursor() != QtCore.Qt.PointingHandCursor: return
@@ -737,12 +762,15 @@ class PageWidget(QLabel):
                   if confirm == 0x00004000:
                     Popen(["x-www-browser", p])
               return
+        ev.ignore()
 
     def mouseReleaseEvent(self, ev):
         if self.copy_text_mode:
             self.copyTextRequested.emit(self.click_point, ev.pos())
             self.click_point = None
             self.setPixmap(self.pm)
+            return
+        ev.ignore()
 
     def updateImage(self):
         #if self.image.isNull() : return

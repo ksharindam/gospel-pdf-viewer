@@ -15,6 +15,7 @@ Changes :
 1.6.1   fixed : Jump to current page issue
 1.7.0   added : Export page to image
 1.7.1   creation and modification date is now formatted to local timezone
+1.7.2   page can be scrolled by click and drag
 
 ...........................................................................
 |   Copyright (C) 2017-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -43,4 +44,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #       
 
-__version__ = '1.7.1'
+__version__ = '1.7.2'
