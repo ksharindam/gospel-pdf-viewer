@@ -1,7 +1,7 @@
 # gospel-pdf-viewer
-Fast poppler based pdf viewer for Linux written in PyQt4
+Poppler based pdf viewer for Linux written in PyQt
 
-**Dependency** = python-qt4, python-poppler-qt4  
+**Dependency** = python3-pyqt5, python3-poppler-qt5  
 
 ### Description
 This program is aimed at short startup time, with all generally used features.  
@@ -10,7 +10,7 @@ This is a evince or qpdfview alternative for linux users.
 ### Installation
 To Install this program open terminal inside gospel-pdf-viewer-master directory.  
 And then run following command..  
-`sudo pip install .`  
+`sudo pip3 install .`  
 Gospel PDF will be automatically added to application menu.
 
 To uninstall run..  

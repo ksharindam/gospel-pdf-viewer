@@ -3,10 +3,10 @@
 import time
 from email.utils import parsedate_tz, mktime_tz
 
-from PyQt4 import QtCore
-from PyQt4.QtGui import ( QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QSpinBox,
-    QLabel, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QIcon,
-    QIntValidator
+from PyQt5 import QtCore
+from PyQt5.QtGui import QIcon, QIntValidator
+from PyQt5.QtWidgets import ( QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QSpinBox,
+    QLabel, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView
 )
 
 class ExportToImageDialog(QDialog):
@@ -51,7 +51,7 @@ class DocInfoDialog(QDialog):
         vLayout.addWidget(closeBtn, 0, QtCore.Qt.AlignRight)
         closeBtn.clicked.connect(self.accept)
         self.tableWidget.horizontalHeader().setDefaultSectionSize(150)
-        self.tableWidget.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
+        self.tableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.tableWidget.horizontalHeader().setVisible(False)
         self.tableWidget.verticalHeader().setVisible(False)
 

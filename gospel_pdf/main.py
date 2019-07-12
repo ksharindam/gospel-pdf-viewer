@@ -1,35 +1,40 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import sys, os
 from subprocess import Popen
-from PyQt4 import QtCore
-from PyQt4.QtGui import (
-    QApplication, QMainWindow, QPixmap, QImage, QWidget, QFrame, QVBoxLayout, QLabel,
-    QFileDialog, QInputDialog, QAction, QIcon, QLineEdit, QStandardItem, QStandardItemModel,
-    QIntValidator, QComboBox, QPainter, QColor, QMessageBox,
+from PyQt5 import QtCore
+from PyQt5.QtGui import ( QPainter, QColor, QPixmap, QImage, QIcon, QStandardItem,
+    QIntValidator, QStandardItemModel
+)
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout, QLabel,
+    QFileDialog, QInputDialog, QAction, QLineEdit,
+    QComboBox, QMessageBox,
     QDialog
 )
 #from PyQt4.QtGui import QDesktopServices
-from popplerqt4 import Poppler
+from popplerqt5 import Poppler
+sys.path.append(os.path.dirname(__file__)) # A workout for enabling python 2 like import
+
 import resources_rc
 from __init__ import __version__
 from ui_main_window import Ui_window
 from  dialogs import ExportToImageDialog, DocInfoDialog
 
-#from PyQt4 import uic
+#from PyQt5 import uic
 #main_ui = uic.loadUiType("main_window.ui")
 
 DEBUG = False
 SCREEN_DPI = 100
-HOMEDIR = os.environ["HOME"]
+HOMEDIR = os.path.expanduser("~")
 
 #def pt2pixel(point, dpi):
 #    return dpi*point/72.0
 
 class Renderer(QtCore.QObject):
     rendered = QtCore.pyqtSignal(int, QImage)
-    textFound = QtCore.pyqtSignal(int, QtCore.QRectF)
+    textFound = QtCore.pyqtSignal(int, list)
 
     def __init__(self, render_even_pages=True):
         QtCore.QObject.__init__(self)
@@ -61,30 +66,22 @@ class Renderer(QtCore.QObject):
     def loadDocument(self, filename, password=''):
         """ loadDocument(str)
         Main thread uses this slot to load document for rendering """
-        self.doc = Poppler.Document.load(filename, password, password)
+        self.doc = Poppler.Document.load(filename, password.encode(), password.encode())
         self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
                                Poppler.Document.Antialiasing | 0x00000020 )
 
-    def findText(self, text, page_num, area, find_reverse):
+    def findText(self, text, page_num, find_reverse):
         if find_reverse:
-          pages = range(page_num+1)
-          pages.reverse()
-          for page_no in pages:
-            page = self.doc.page(page_no)
-            found = page.search(text, area, Poppler.Page.PreviousResult, Poppler.Page.CaseInsensitive )
-            if found:
-              self.textFound.emit(page_no, area)
-              break
-            area = QtCore.QRectF(page.pageSizeF().width(), page.pageSizeF().height(),0,0) if find_reverse else QtCore.QRectF()
+            pages = [i for i in range(page_num+1)]
+            pages.reverse()
         else:
-          pages = range(page_num, self.doc.numPages())
-          for page_no in pages:
+            pages = range(page_num, self.doc.numPages())
+        for page_no in pages:
             page = self.doc.page(page_no)
-            found = page.search(text, area, Poppler.Page.NextResult, Poppler.Page.CaseInsensitive )
-            if found:
-              self.textFound.emit(page_no, area)
-              break
-            area = QtCore.QRectF()
+            textareas = page.search(text,Poppler.Page.CaseInsensitive,0)
+            if textareas != []:
+                self.textFound.emit(page_no, textareas)
+                break
 
 
 class Frame(QFrame):
@@ -113,8 +110,8 @@ class Frame(QFrame):
 #class Main(main_ui[0], main_ui[1]):
 class Main(QMainWindow, Ui_window):
     renderRequested = QtCore.pyqtSignal(int, float)
-    loadFileRequested = QtCore.pyqtSignal(unicode, QtCore.QByteArray)
-    findTextRequested = QtCore.pyqtSignal(str, int, QtCore.QRectF, bool)
+    loadFileRequested = QtCore.pyqtSignal(str, str)
+    findTextRequested = QtCore.pyqtSignal(str, int, bool)
 
     def __init__(self, parent=None):
         super(Main, self).__init__(parent)
@@ -192,13 +189,13 @@ class Main(QMainWindow, Ui_window):
         # Add widgets
         # Impoort settings
         self.settings = QtCore.QSettings("gospel-pdf", "main", self)
-        self.recent_files = list( self.settings.value("RecentFiles", []).toStringList())
-        self.history_filenames = list( self.settings.value("HistoryFileNameList", []).toStringList())
-        self.history_page_no = list( self.settings.value("HistoryPageNoList", []).toStringList() )
-        self.offset_x = int(self.settings.value("OffsetX", 4).toString())
-        self.offset_y = int(self.settings.value("OffsetY", 26).toString())
+        self.recent_files = self.settings.value("RecentFiles", [])
+        self.history_filenames = self.settings.value("HistoryFileNameList", [])
+        self.history_page_no = self.settings.value("HistoryPageNoList", [])
+        self.offset_x = int(self.settings.value("OffsetX", 4))
+        self.offset_y = int(self.settings.value("OffsetY", 26))
         self.available_area = [desktop.availableGeometry().width(), desktop.availableGeometry().height()]
-        self.zoomLevelCombo.setCurrentIndex(int(self.settings.value("ZoomLevel", 2).toString()))
+        self.zoomLevelCombo.setCurrentIndex(int(self.settings.value("ZoomLevel", 2)))
         # Connect Signals
         self.scrollArea.verticalScrollBar().valueChanged.connect(self.onMouseScroll)
         self.scrollArea.verticalScrollBar().sliderReleased.connect(self.onSliderRelease)
@@ -233,8 +230,8 @@ class Main(QMainWindow, Ui_window):
         self.recent_files_actions = []
         self.addRecentFiles()
         # Show Window
-        width = int(self.settings.value("WindowWidth").toString())
-        height = int(self.settings.value("WindowHeight").toString())
+        width = int(self.settings.value("WindowWidth"))
+        height = int(self.settings.value("WindowHeight"))
         self.resize(width, height)
         self.show()
 
@@ -242,7 +239,7 @@ class Main(QMainWindow, Ui_window):
         self.recent_files_actions[:] = []
         self.menuRecentFiles.clear()
         for each in self.recent_files:
-            name = elideMiddle(os.path.basename(unicode(each)), 60)
+            name = elideMiddle(os.path.basename(each), 60)
             action = self.menuRecentFiles.addAction(name, self.openRecentFile)
             self.recent_files_actions.append(action)
         self.menuRecentFiles.addSeparator()
@@ -272,14 +269,14 @@ class Main(QMainWindow, Ui_window):
 
     def loadPDFfile(self, filename):
         """ Loads pdf document in all threads """
-        filename = os.path.expanduser(unicode(filename))
+        filename = os.path.expanduser(filename)
         self.doc = Poppler.Document.load(filename)
         if not self.doc : return
         password = ''
-        if self.doc.isLocked() : 
+        if self.doc.isLocked() :
             password = QInputDialog.getText(self, 'This PDF is locked', 'Enter Password :', 2)[0].toUtf8()
             if password == '' : sys.exit(1)
-            self.doc.unlock(password, password)
+            self.doc.unlock(password.encode(), password.encode())
         if not self.first_document:
             self.removeOldDoc()
         self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
@@ -317,12 +314,12 @@ class Main(QMainWindow, Ui_window):
         if self.current_page != 0 : QtCore.QTimer.singleShot(500, self.jumpToCurrentPage)
 
     def setRenderedImage(self, page_no, image):
-        """ takes a QImage and sets pixmap of the specified page 
+        """ takes a QImage and sets pixmap of the specified page
             when number of rendered pages exceeds a certain number, old page image is
             deleted to save memory """
         self.pages[page_no].setPageData(page_no, QPixmap.fromImage(image), self.doc.page(page_no))
         # Request to render next page
-        if self.current_page < page_no < (self.current_page + self.max_preload - 2): 
+        if self.current_page < page_no < (self.current_page + self.max_preload - 2):
             if (page_no+2 not in self.rendered_pages) and (page_no+2 < self.total_pages):
               self.rendered_pages.append(page_no+2)
               self.renderRequested.emit(page_no+2, self.pages[page_no+2].dpi)
@@ -332,7 +329,7 @@ class Main(QMainWindow, Ui_window):
             self.pages[self.rendered_pages[0]].clear()
             self.pages[self.rendered_pages[0]].jumpToRequested.disconnect(self.jumpToPage)
             self.rendered_pages.pop(0)
-        if DEBUG : print page_no, self.rendered_pages
+        if DEBUG : print(page_no, self.rendered_pages)
 
     def renderCurrentPage(self):
         """ Requests to render current page. if it is already rendered, then request
@@ -344,7 +341,7 @@ class Main(QMainWindow, Ui_window):
                 self.renderRequested.emit(page_no, self.pages[page_no].dpi)
                 self.pages[page_no].jumpToRequested.connect(self.jumpToPage)
                 requested += 1
-                if DEBUG : print page_no
+                if DEBUG : print(page_no)
                 if requested == 2: return
 
     def onMouseScroll(self, pos):
@@ -360,10 +357,10 @@ class Main(QMainWindow, Ui_window):
         self.onMouseScroll(self.scrollArea.verticalScrollBar().value())
 
     def openFile(self):
-        filename = QFileDialog.getOpenFileName(self,
+        filename, sel_filter = QFileDialog.getOpenFileName(self,
                                       "Select Document to Open", "",
                                       "Portable Document Format (*.pdf);;All Files (*)" )
-        if not filename.isEmpty():
+        if not filename=="":
             self.loadPDFfile(filename)
 
     def exportToPS(self):
@@ -401,7 +398,7 @@ class Main(QMainWindow, Ui_window):
 
     def docInfo(self):
         info_keys = list(self.doc.infoKeys())
-        values = [unicode(self.doc.info(key)) for key in info_keys]
+        values = [self.doc.info(key) for key in info_keys]
         page_size = self.doc.page(self.current_page).pageSizeF()
         page_size = "%s x %s pts"%(page_size.width(), page_size.height())
         info_keys += ['Embedded FIles', 'Page Size']
@@ -444,7 +441,7 @@ class Main(QMainWindow, Ui_window):
 
     def gotoPage(self):
         text = self.gotoPageEdit.text()
-        if text.isEmpty() : return
+        if text=="" : return
         self.jumpToPage(int(text)-1)
         self.gotoPageEdit.clear()
         self.gotoPageEdit.clearFocus()
@@ -454,7 +451,7 @@ class Main(QMainWindow, Ui_window):
     def availableWidth(self):
         """ Returns available width for rendering a page """
         dock_width = 0 if self.dockWidget.isHidden() else self.dockWidget.width()
-        return self.width() - dock_width - 50       
+        return self.width() - dock_width - 50
 
     def resizePages(self):
         '''Resize all pages according to zoom level '''
@@ -475,7 +472,7 @@ class Main(QMainWindow, Ui_window):
 
     def setZoom(self, index):
         """ Gets called when zoom level is changed"""
-        self.scroll_render_lock = True # rendering on scroll is locked as set scroll position 
+        self.scroll_render_lock = True # rendering on scroll is locked as set scroll position
         self.resizePages()
         QtCore.QTimer.singleShot(300, self.afterZoom)
 
@@ -498,28 +495,30 @@ class Main(QMainWindow, Ui_window):
         self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
         self.scroll_render_lock = False
 #########            Search Text            #########
-    def findNext(self):
+    def findNext(self, direction=1):
         text = self.findTextEdit.text()
-        area = self.search_area.adjusted(self.search_area.width(), 1, self.search_area.width(), 1)
-        self.findTextRequested.emit(text, self.search_page_no, area, False)
-        if self.search_text == text: return
+        if text == "" : return
+        if self.search_text != text:    # search from current page when text changed
+            self.search_page_no = self.current_page
+            search_page_no = self.current_page
+        else:
+            search_page_no = self.current_page + 1
+        self.findTextRequested.emit(text, search_page_no, False)
         self.search_text = text
-        self.search_area = QtCore.QRectF()
-        self.search_page_no = self.current_page
 
     def findBack(self):
         text = self.findTextEdit.text()
-        area = self.search_area.adjusted(-self.search_area.width(), -1, -self.search_area.width(), -1)
-        self.findTextRequested.emit(text, self.search_page_no, area, True)
-        if self.search_text == text: return
+        if text == "" : return
+        if self.search_text != text:    # search from current page when text changed
+            self.search_page_no = self.current_page
+            search_page_no = self.current_page
+        else:
+            search_page_no = self.current_page - 1
+        self.findTextRequested.emit(text, search_page_no, True)
         self.search_text = text
-        self.search_area = QtCore.QRectF()
-        self.search_page_no = self.current_page
 
-    def onTextFound(self, page_no, area):
-        zoom = self.pages[page_no].dpi/72.0
-        self.pages[page_no].highlight_area = QtCore.QRectF(area.left()*zoom, area.top()*zoom,
-                                                           area.width()*zoom, area.height()*zoom)
+    def onTextFound(self, page_no, areas):
+        self.pages[page_no].highlight_area = areas
         # Alternate method of above two lines
         #matrix = QMatrix(self.pages[page_no].dpi/72.0, 0,0, self.pages[page_no].dpi/72.0,0,0)
         #self.pages[page_no].highlight_area = matrix.mapRect(area).toRect()
@@ -528,24 +527,24 @@ class Main(QMainWindow, Ui_window):
         else:
             self.rendered_pages.append(page_no)
             self.renderRequested.emit(page_no, self.pages[page_no].dpi)
-        if page_no != self.search_page_no :
+        if page_no != self.search_page_no :     # clear previous highlights
             self.pages[self.search_page_no].highlight_area = None
             self.pages[self.search_page_no].updateImage()
             self.jumpToPage(page_no)
-        self.search_area = area
+        #self.search_area = area
         self.search_page_no = page_no
 
     def toggleFindMode(self, enable):
         if enable:
           self.findTextEdit.setFocus()
           self.search_text = ''
-          self.search_area = QtCore.QRectF()
+          #self.search_area = QtCore.QRectF()
           self.search_page_no = self.current_page
         else:
           self.pages[self.search_page_no].highlight_area = None
           self.pages[self.search_page_no].updateImage()
           self.search_text = ''
-          self.search_area = QtCore.QRectF()
+          #self.search_area = QtCore.QRectF()
           self.findTextEdit.setText('')
 
 #########      Cpoy Text to Clip Board      #########
@@ -591,14 +590,14 @@ class Main(QMainWindow, Ui_window):
         if parent_item.rowCount() < 4:
             self.treeView.expandToDepth(0)
         self.treeView.setHeaderHidden(True)
-        self.treeView.header().setResizeMode(0, 1)
-        self.treeView.header().setResizeMode(1, 3)
+        self.treeView.header().setSectionResizeMode(0, 1)
+        self.treeView.header().setSectionResizeMode(1, 3)
         self.treeView.header().setStretchLastSection(False)
 
     def onOutlineClick(self, m_index):
-        page = self.treeView.model().data(m_index, QtCore.Qt.UserRole+1).toString()
-        if page == "": return
-        self.jumpToPage(int(page)-1)
+        page = self.treeView.model().data(m_index, QtCore.Qt.UserRole+1)
+        if not page: return
+        self.jumpToPage(page-1)
 
     def resizeEvent(self, ev):
         QMainWindow.resizeEvent(self, ev)
@@ -733,7 +732,7 @@ class PageWidget(QLabel):
 
         # Change cursor if cursor is over link annotation
         for area in self.link_areas:
-            if area.contains(ev.pos()): 
+            if area.contains(ev.pos()):
                 self.setCursor(QtCore.Qt.PointingHandCursor)
                 return
         self.unsetCursor()
@@ -748,7 +747,7 @@ class PageWidget(QLabel):
             return
         # In normal mode
         for i, area in enumerate(self.link_areas):
-            if area.contains(ev.pos()): 
+            if area.contains(ev.pos()):
               # For jump to page link
               if self.link_annots[i].linkDestination().linkType() == Poppler.Link.Goto:
                 p = self.link_annots[i].linkDestination().destination().pageNumber()
@@ -756,8 +755,8 @@ class PageWidget(QLabel):
               # For URL link
               elif self.link_annots[i].linkDestination().linkType() == Poppler.Link.Browse:
                 p = self.link_annots[i].linkDestination().url()
-                if p.startsWith("http"):
-                  confirm = QMessageBox.question(self, "Open Url in Browser", 
+                if p.startswith("http"):
+                  confirm = QMessageBox.question(self, "Open Url in Browser",
                             "Do you want to open browser to open...\n%s"%p, QMessageBox.Yes|QMessageBox.Cancel)
                   if confirm == 0x00004000:
                     Popen(["x-www-browser", p])
@@ -777,7 +776,11 @@ class PageWidget(QLabel):
         if self.highlight_area:
             img = self.image.copy()
             painter = QPainter(img)
-            painter.fillRect(self.highlight_area, QColor(0,255,0, 127))
+            zoom = self.dpi/72.0
+            for area in self.highlight_area:
+                box = QtCore.QRectF(area.left()*zoom, area.top()*zoom,
+                                    area.width()*zoom, area.height()*zoom)
+                painter.fillRect(box, QColor(0,255,0, 127))
             painter.end()
             self.setPixmap(img)
         else:
@@ -791,7 +794,6 @@ def wait(millisec):
 
 def collapseUser(path):
     ''' converts /home/user/file.ext to ~/file.ext '''
-    path = unicode(path)
     if path.startswith(HOMEDIR):
         return path.replace(HOMEDIR, '~', 1)
     return path
@@ -804,7 +806,7 @@ def main():
     app = QApplication(sys.argv)
     win = Main()
     if len(sys.argv)>1 and os.path.exists(os.path.abspath(sys.argv[-1])):
-        win.loadPDFfile(QtCore.QString.fromUtf8(os.path.abspath(sys.argv[-1])))
+        win.loadPDFfile(os.path.abspath(sys.argv[-1]))
     app.aboutToQuit.connect(win.onAppQuit)
     sys.exit(app.exec_())
 
