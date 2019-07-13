@@ -1,13 +1,12 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Name = Gospel PDF Viewer
 Executable Command = gospel-pdf
 Package Name = gospel-pdf
 Python Module Name = gospel_pdf
-Debian Dependency = python3-pyqt5, python3-poppler-qt4
+Debian Dependency = python3-pyqt5, python3-poppler-qt5
 
-Description = A poppler based PDF viewer written in PyQt4
+Description = A poppler based PDF viewer written in PyQt
 Changes :
 1.4.0   added : Export to Postscript
 1.5.0   added : Show doc info
@@ -18,6 +17,7 @@ Changes :
 1.7.2   page can be scrolled by click and drag
 2.0.0   initial port to python3 pyqt5
 2.0.1   print support with quikprint program
+2.0.2   fixed : search highlight persisted on some cases
 
 ...........................................................................
 |   Copyright (C) 2017-2019 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -46,4 +46,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #
 
-__version__ = '2.0.1'
+__version__ = '2.0.2'

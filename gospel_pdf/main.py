@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
 )
 #from PyQt4.QtGui import QDesktopServices
 from popplerqt5 import Poppler
-sys.path.append(os.path.dirname(__file__)) # A workout for enabling python 2 like import
+sys.path.append(os.path.dirname(__file__)) # for enabling python 2 like import
 
 import resources_rc
 from __init__ import __version__
@@ -504,54 +504,51 @@ class Main(QMainWindow, Ui_window):
     def findNext(self, direction=1):
         text = self.findTextEdit.text()
         if text == "" : return
-        if self.search_text != text:    # search from current page when text changed
-            self.search_page_no = self.current_page
+        # search from current page when text changed
+        if self.search_text != text or self.search_page_no == -1:
             search_page_no = self.current_page
         else:
-            search_page_no = self.current_page + 1
+            search_page_no = self.search_page_no + 1
         self.findTextRequested.emit(text, search_page_no, False)
+        if self.search_page_no != -1:     # clear previous highlights
+            self.pages[self.search_page_no].highlight_area = None
+            self.pages[self.search_page_no].updateImage()
+            self.search_page_no = -1
         self.search_text = text
 
     def findBack(self):
         text = self.findTextEdit.text()
         if text == "" : return
-        if self.search_text != text:    # search from current page when text changed
-            self.search_page_no = self.current_page
+        if self.search_text != text or self.search_page_no == -1:
             search_page_no = self.current_page
         else:
-            search_page_no = self.current_page - 1
+            search_page_no = self.search_page_no - 1
         self.findTextRequested.emit(text, search_page_no, True)
+        if self.search_page_no != -1:
+            self.pages[self.search_page_no].highlight_area = None
+            self.pages[self.search_page_no].updateImage()
+            self.search_page_no = -1
         self.search_text = text
 
     def onTextFound(self, page_no, areas):
         self.pages[page_no].highlight_area = areas
-        # Alternate method of above two lines
-        #matrix = QMatrix(self.pages[page_no].dpi/72.0, 0,0, self.pages[page_no].dpi/72.0,0,0)
-        #self.pages[page_no].highlight_area = matrix.mapRect(area).toRect()
+        self.search_page_no = page_no
         if self.pages[page_no].pixmap():
             self.pages[page_no].updateImage()
         else:
             self.rendered_pages.append(page_no)
             self.renderRequested.emit(page_no, self.pages[page_no].dpi)
-        if page_no != self.search_page_no :     # clear previous highlights
-            self.pages[self.search_page_no].highlight_area = None
-            self.pages[self.search_page_no].updateImage()
-            self.jumpToPage(page_no)
-        #self.search_area = area
-        self.search_page_no = page_no
+        self.jumpToPage(page_no)
 
     def toggleFindMode(self, enable):
         if enable:
+          self.findTextEdit.setText('')
           self.findTextEdit.setFocus()
           self.search_text = ''
-          #self.search_area = QtCore.QRectF()
-          self.search_page_no = self.current_page
-        else:
+          self.search_page_no = -1
+        elif self.search_page_no!= -1:
           self.pages[self.search_page_no].highlight_area = None
           self.pages[self.search_page_no].updateImage()
-          self.search_text = ''
-          #self.search_area = QtCore.QRectF()
-          self.findTextEdit.setText('')
 
 #########      Cpoy Text to Clip Board      #########
     def toggleCopyText(self, checked):
