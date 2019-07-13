@@ -5,7 +5,7 @@ Name = Gospel PDF Viewer
 Executable Command = gospel-pdf
 Package Name = gospel-pdf
 Python Module Name = gospel_pdf
-Debian Dependency = python-qt4, python-poppler-qt4
+Debian Dependency = python3-pyqt5, python3-poppler-qt4
 
 Description = A poppler based PDF viewer written in PyQt4
 Changes :
@@ -16,9 +16,11 @@ Changes :
 1.7.0   added : Export page to image
 1.7.1   creation and modification date is now formatted to local timezone
 1.7.2   page can be scrolled by click and drag
+2.0.0   initial port to python3 pyqt5
+2.0.1   print support with quikprint program
 
 ...........................................................................
-|   Copyright (C) 2017-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2017-2019 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -34,14 +36,14 @@ Changes :
 |   along with this program.  If not, see <http://www.gnu.org/licenses/>.  |
 ...........................................................................
 """
-# TODO: 
+# TODO:
 #       Show hyperlink target location at below like a browser
 #       Rotate pages
 #       Show fonts list
 #       password manager, save as decrypted/encrypted
 #       resize pages when dock is hidden
-# FIXME : 
+# FIXME :
 #       Search is not cancelled immediately, when cancel is pressed
-#       
+#
 
-__version__ = '1.7.2'
+__version__ = '2.0.1'

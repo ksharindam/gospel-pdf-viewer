@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'files/main_window.ui'
 #
-# Created by: PyQt5 UI code generator 5.7
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -24,7 +24,7 @@ class Ui_window(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 397, 376))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 397, 374))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.scrollAreaWidgetContents)
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
@@ -33,7 +33,7 @@ class Ui_window(object):
         self.verticalLayout_2.addWidget(self.scrollArea)
         window.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(window)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 663, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 663, 22))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -79,7 +79,6 @@ class Ui_window(object):
         self.dockWidgetContents_2 = QtWidgets.QWidget()
         self.dockWidgetContents_2.setObjectName("dockWidgetContents_2")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.dockWidgetContents_2)
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.findBackButton = QtWidgets.QPushButton(self.dockWidgetContents_2)
         self.findBackButton.setObjectName("findBackButton")
@@ -152,11 +151,17 @@ class Ui_window(object):
         icon12.addPixmap(QtGui.QPixmap(":/image.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.pageToImageAction.setIcon(icon12)
         self.pageToImageAction.setObjectName("pageToImageAction")
+        self.printAction = QtWidgets.QAction(window)
+        icon13 = QtGui.QIcon()
+        icon13.addPixmap(QtGui.QPixmap(":/document-print.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.printAction.setIcon(icon13)
+        self.printAction.setObjectName("printAction")
         self.menuExport.addAction(self.pageToImageAction)
         self.menuExport.addAction(self.toPSAction)
         self.menuFile.addAction(self.openFileAction)
         self.menuFile.addAction(self.menuRecentFiles.menuAction())
         self.menuFile.addAction(self.menuExport.menuAction())
+        self.menuFile.addAction(self.printAction)
         self.menuFile.addAction(self.docInfoAction)
         self.menuFile.addAction(self.quitAction)
         self.menuNavigate.addAction(self.prevPageAction)
@@ -203,5 +208,8 @@ class Ui_window(object):
         self.docInfoAction.setText(_translate("window", "Document Info"))
         self.actionClear.setText(_translate("window", "clear"))
         self.pageToImageAction.setText(_translate("window", "Page to Image"))
+        self.printAction.setText(_translate("window", "Print"))
+        self.printAction.setToolTip(_translate("window", "Print with QuikPrint"))
+        self.printAction.setShortcut(_translate("window", "Ctrl+P"))
 
 import resources_rc

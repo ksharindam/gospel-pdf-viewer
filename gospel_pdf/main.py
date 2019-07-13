@@ -140,7 +140,9 @@ class Main(QMainWindow, Ui_window):
         self.findTextAction = QAction(QIcon(":/search.png"), "Find Text", self)
         self.findTextAction.setShortcut('Ctrl+F')
         self.findTextAction.triggered.connect(self.dockSearch.show)
+        # connect menu actions signals
         self.openFileAction.triggered.connect(self.openFile)
+        self.printAction.triggered.connect(self.printFile)
         self.quitAction.triggered.connect(self.close)
         self.toPSAction.triggered.connect(self.exportToPS)
         self.pageToImageAction.triggered.connect(self.exportPageToImage)
@@ -167,6 +169,7 @@ class Main(QMainWindow, Ui_window):
         self.zoom_levels = [0, 75, 90, 100, 110 , 121, 133, 146, 175, 200]
         # Add toolbar actions
         self.toolBar.addAction(self.openFileAction)
+        self.toolBar.addAction(self.printAction)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.zoomoutAction)
         self.toolBar.addWidget(self.zoomLevelCombo)
@@ -362,6 +365,9 @@ class Main(QMainWindow, Ui_window):
                                       "Portable Document Format (*.pdf);;All Files (*)" )
         if not filename=="":
             self.loadPDFfile(filename)
+
+    def printFile(self):
+        Popen(["quikprint", self.filename])
 
     def exportToPS(self):
         width = self.doc.page(self.current_page).pageSizeF().width()
