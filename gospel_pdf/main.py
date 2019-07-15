@@ -171,6 +171,8 @@ class Main(QMainWindow, Ui_window):
         self.toolBar.addAction(self.openFileAction)
         self.toolBar.addAction(self.printAction)
         self.toolBar.addSeparator()
+        self.toolBar.addAction(self.docInfoAction)
+        self.toolBar.addSeparator()
         self.toolBar.addAction(self.zoomoutAction)
         self.toolBar.addWidget(self.zoomLevelCombo)
         self.toolBar.addAction(self.zoominAction)

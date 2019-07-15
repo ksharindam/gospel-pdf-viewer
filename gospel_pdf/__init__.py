@@ -18,6 +18,7 @@ Changes :
 2.0.0   initial port to python3 pyqt5
 2.0.1   print support with quikprint program
 2.0.2   fixed : search highlight persisted on some cases
+2.0.3   added : document info button in toolbar
 
 ...........................................................................
 |   Copyright (C) 2017-2019 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -46,4 +47,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #
 
-__version__ = '2.0.2'
+__version__ = '2.0.3'
