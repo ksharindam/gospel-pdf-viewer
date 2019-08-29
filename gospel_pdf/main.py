@@ -235,8 +235,8 @@ class Main(QMainWindow, Ui_window):
         self.recent_files_actions = []
         self.addRecentFiles()
         # Show Window
-        width = int(self.settings.value("WindowWidth"))
-        height = int(self.settings.value("WindowHeight"))
+        width = int(self.settings.value("WindowWidth", 1040))
+        height = int(self.settings.value("WindowHeight", 717))
         self.resize(width, height)
         self.show()
 
