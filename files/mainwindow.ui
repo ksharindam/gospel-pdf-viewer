@@ -33,7 +33,7 @@
          <x>0</x>
          <y>0</y>
          <width>397</width>
-         <height>374</height>
+         <height>373</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -52,7 +52,7 @@
      <x>0</x>
      <y>0</y>
      <width>663</width>
-     <height>22</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -90,9 +90,11 @@
     <property name="title">
      <string>Navigate</string>
     </property>
+    <addaction name="undoJumpAction"/>
     <addaction name="prevPageAction"/>
     <addaction name="nextPageAction"/>
-    <addaction name="undoJumpAction"/>
+    <addaction name="firstPageAction"/>
+    <addaction name="lastPageAction"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -148,7 +150,7 @@
   </widget>
   <widget class="QDockWidget" name="dockSearch">
    <property name="features">
-    <set>QDockWidget::DockWidgetClosable</set>
+    <set>QDockWidget::NoDockWidgetFeatures</set>
    </property>
    <property name="allowedAreas">
     <set>Qt::BottomDockWidgetArea</set>
@@ -335,6 +337,24 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="firstPageAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/go-first.png</normaloff>:/go-first.png</iconset>
+   </property>
+   <property name="text">
+    <string>First Page</string>
+   </property>
+  </action>
+  <action name="lastPageAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/go-last.png</normaloff>:/go-last.png</iconset>
+   </property>
+   <property name="text">
+    <string>Last Page</string>
    </property>
   </action>
  </widget>

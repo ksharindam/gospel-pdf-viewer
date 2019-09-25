@@ -19,13 +19,13 @@ sys.path.append(os.path.dirname(__file__)) # for enabling python 2 like import
 
 import resources_rc
 from __init__ import __version__
-from ui_main_window import Ui_window
-from  dialogs import ExportToImageDialog, DocInfoDialog
-
-#from PyQt5 import uic
-#main_ui = uic.loadUiType("main_window.ui")
+from ui_mainwindow import Ui_window
+from dialogs import ExportToImageDialog, DocInfoDialog
 
 DEBUG = False
+def debug(*args):
+    if DEBUG: print(*args)
+
 SCREEN_DPI = 100
 HOMEDIR = os.path.expanduser("~")
 
@@ -107,7 +107,6 @@ class Frame(QFrame):
         self.hScrollbar.setValue(self.h_scrollbar_pos + self.click_pos.x() - ev.globalX())
 
 
-#class Main(main_ui[0], main_ui[1]):
 class Main(QMainWindow, Ui_window):
     renderRequested = QtCore.pyqtSignal(int, float)
     loadFileRequested = QtCore.pyqtSignal(str, str)
@@ -128,10 +127,6 @@ class Main(QMainWindow, Ui_window):
         self.resize_page_timer.setSingleShot(True)
         self.resize_page_timer.timeout.connect(self.onWindowResize)
         # Add shortcut actions
-        self.firstPageAction = QAction(QIcon(":/go-first.png"), "First Page", self)
-        self.firstPageAction.triggered.connect(self.goFirstPage)
-        self.lastPageAction = QAction(QIcon(":/go-last.png"), "Last Page", self)
-        self.lastPageAction.triggered.connect(self.goLastPage)
         self.gotoPageAction = QAction(QIcon(":/goto.png"), "GoTo Page", self)
         self.gotoPageAction.triggered.connect(self.gotoPage)
         self.copyTextAction = QAction(QIcon(":/copy.png"), "Copy Text", self)
@@ -149,9 +144,11 @@ class Main(QMainWindow, Ui_window):
         self.docInfoAction.triggered.connect(self.docInfo)
         self.zoominAction.triggered.connect(self.zoomIn)
         self.zoomoutAction.triggered.connect(self.zoomOut)
+        self.undoJumpAction.triggered.connect(self.undoJump)
         self.prevPageAction.triggered.connect(self.goPrevPage)
         self.nextPageAction.triggered.connect(self.goNextPage)
-        self.undoJumpAction.triggered.connect(self.undoJump)
+        self.firstPageAction.triggered.connect(self.goFirstPage)
+        self.lastPageAction.triggered.connect(self.goLastPage)
         # Create widgets for menubar / toolbar
         self.gotoPageEdit = QLineEdit(self)
         self.gotoPageEdit.setPlaceholderText("Jump to page...")
@@ -322,19 +319,21 @@ class Main(QMainWindow, Ui_window):
         """ takes a QImage and sets pixmap of the specified page
             when number of rendered pages exceeds a certain number, old page image is
             deleted to save memory """
+        debug("Set Rendered Image :", page_no)
         self.pages[page_no].setPageData(page_no, QPixmap.fromImage(image), self.doc.page(page_no))
+        self.pages[page_no].jumpToRequested.connect(self.jumpToPage)
         # Request to render next page
         if self.current_page < page_no < (self.current_page + self.max_preload - 2):
             if (page_no+2 not in self.rendered_pages) and (page_no+2 < self.total_pages):
               self.rendered_pages.append(page_no+2)
               self.renderRequested.emit(page_no+2, self.pages[page_no+2].dpi)
-              self.pages[page_no+2].jumpToRequested.connect(self.jumpToPage)
         # Replace old rendered pages with blank image
         if len(self.rendered_pages)>10:
-            self.pages[self.rendered_pages[0]].clear()
-            self.pages[self.rendered_pages[0]].jumpToRequested.disconnect(self.jumpToPage)
-            self.rendered_pages.pop(0)
-        if DEBUG : print(page_no, self.rendered_pages)
+            cleared_page_no = self.rendered_pages.pop(0)
+            debug("Clear Page :", cleared_page_no)
+            self.pages[cleared_page_no].clear()
+            self.pages[cleared_page_no].jumpToRequested.disconnect(self.jumpToPage)
+        debug("Rendered Pages :", self.rendered_pages)
 
     def renderCurrentPage(self):
         """ Requests to render current page. if it is already rendered, then request
@@ -344,9 +343,8 @@ class Main(QMainWindow, Ui_window):
             if (page_no not in self.rendered_pages) and (page_no < self.total_pages):
                 self.rendered_pages.append(page_no)
                 self.renderRequested.emit(page_no, self.pages[page_no].dpi)
-                self.pages[page_no].jumpToRequested.connect(self.jumpToPage)
                 requested += 1
-                if DEBUG : print(page_no)
+                debug("Render Requested :", page_no)
                 if requested == 2: return
 
     def onMouseScroll(self, pos):
