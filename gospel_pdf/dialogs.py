@@ -32,7 +32,7 @@ class ExportToImageDialog(QDialog):
 
         # set values
         self.pageNoSpin.setRange(1, total_pages)
-        self.pageNoSpin.setValue(page_no+1)
+        self.pageNoSpin.setValue(page_no)
         # connect signals
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)

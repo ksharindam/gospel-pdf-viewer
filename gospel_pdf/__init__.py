@@ -8,18 +8,14 @@ Debian Dependency = python3-pyqt5, python3-poppler-qt5
 
 Description = A poppler based PDF viewer written in PyQt
 Changes :
-1.4.0   added : Export to Postscript
-1.5.0   added : Show doc info
-1.6.0   added : Show recent files
-1.6.1   fixed : Jump to current page issue
-1.7.0   added : Export page to image
-1.7.1   creation and modification date is now formatted to local timezone
-1.7.2   page can be scrolled by click and drag
 2.0.0   initial port to python3 pyqt5
 2.0.1   print support with quikprint program
 2.0.2   fixed : search highlight persisted on some cases
 2.0.3   added : document info button in toolbar
 2.0.4   fixed : error due to no default widow geometry
+2.0.5   fixed : crashes after inputing password
+2.0.6   added : statusbar to show hyperlink url
+2.0.7   added : jump to exact position
 
 ...........................................................................
 |   Copyright (C) 2017-2019 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -39,13 +35,12 @@ Changes :
 ...........................................................................
 """
 # TODO:
-#       Show hyperlink target location at below like a browser
-#       Rotate pages
+#       jump to partial page
 #       Show fonts list
-#       password manager, save as decrypted/encrypted
+#       save as decrypted/encrypted
 #       resize pages when dock is hidden
 # FIXME :
 #       Search is not cancelled immediately, when cancel is pressed
 #
 
-__version__ = '2.0.4'
+__version__ = '2.0.7'
