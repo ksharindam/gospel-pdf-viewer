@@ -85,13 +85,13 @@ class Renderer(QtCore.QObject):
                 break
 
 
-class Main(QMainWindow, Ui_window):
+class Window(QMainWindow, Ui_window):
     renderRequested = QtCore.pyqtSignal(int, float)
     loadFileRequested = QtCore.pyqtSignal(str, str)
     findTextRequested = QtCore.pyqtSignal(str, int, bool)
 
     def __init__(self, parent=None):
-        super(Main, self).__init__(parent)
+        QMainWindow.__init__(self, parent)
         self.setupUi(self)
         self.dockSearch.hide()
         self.dockWidget.hide()
@@ -297,7 +297,8 @@ class Main(QMainWindow, Ui_window):
         self.pageNoLabel.setText('<b>%i/%i</b>' % (self.current_page, self.pages_count) )
         self.gotoPageValidator.setTop(self.pages_count)
         self.setWindowTitle(os.path.basename(self.filename)+ " - Gospel PDF " + __version__)
-        if self.current_page != 1 : QtCore.QTimer.singleShot(500, self.jumpToCurrentPage)
+        if self.current_page != 1 :
+            QtCore.QTimer.singleShot(150+self.pages_count//3, self.jumpToCurrentPage)
 
     def setRenderedImage(self, page_no, image):
         """ takes a QImage and sets pixmap of the specified page
@@ -404,8 +405,7 @@ class Main(QMainWindow, Ui_window):
         """ scrolls to a particular page and position """
         if page_num < 1: page_num = 1
         elif page_num > self.pages_count: page_num = self.pages_count
-        if top < 0 : top = 0
-        elif top > 1.0 : top = 1.0
+        if not (0 < top < 1.0) : top = 0
         self.jumped_from = self.current_page
         self.current_page = page_num
         scrollbar_pos = self.pages[page_num-1].pos().y()
@@ -620,7 +620,7 @@ class Main(QMainWindow, Ui_window):
         self.settings.setValue("HistoryFileNameList", self.history_filenames[:100])
         self.settings.setValue("HistoryPageNoList", self.history_page_no[:100])
         self.settings.setValue("RecentFiles", self.recent_files[:10])
-        return super(Main, self).closeEvent(ev)
+        return QMainWindow.closeEvent(self, ev)
 
     def onAppQuit(self):
         """ Close running threads """
@@ -851,7 +851,7 @@ def elideMiddle(text, length):
 
 def main():
     app = QApplication(sys.argv)
-    win = Main()
+    win = Window()
     if len(sys.argv)>1 and os.path.exists(os.path.abspath(sys.argv[-1])):
         win.loadPDFfile(os.path.abspath(sys.argv[-1]))
     app.aboutToQuit.connect(win.onAppQuit)

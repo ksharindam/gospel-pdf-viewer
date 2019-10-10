@@ -16,6 +16,7 @@ Changes :
 2.0.5   fixed : crashes after inputing password
 2.0.6   added : statusbar to show hyperlink url
 2.0.7   added : jump to exact position
+2.0.8   fixed : page not rendered when jump to top=1.0
 
 ...........................................................................
 |   Copyright (C) 2017-2019 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -35,7 +36,6 @@ Changes :
 ...........................................................................
 """
 # TODO:
-#       jump to partial page
 #       Show fonts list
 #       save as decrypted/encrypted
 #       resize pages when dock is hidden
@@ -43,4 +43,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #
 
-__version__ = '2.0.7'
+__version__ = '2.0.8'
