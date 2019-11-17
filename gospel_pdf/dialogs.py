@@ -64,10 +64,15 @@ class DocInfoDialog(QDialog):
             self.tableWidget.setItem(i,1, QTableWidgetItem(values[i]))
 
 # Takes D:20130501200439+01'00' like format and returns a local timezone based format
+# In some pdfs date does not start with D:
 def parsePdfTime(t):
-    ts = time.strptime(t[2:16], "%Y%m%d%H%M%S")
+    t = t.replace('D:', '')
+    try:
+        ts = time.strptime(t[:14], "%Y%m%d%H%M%S")
+    except:
+        return t
     rfc2822 = time.strftime("%a, %d %b %Y %H:%M:%S "+t[-5:], ts) # to rfc2822 time format
-    py_time = mktime_tz(parsedate_tz(str(rfc2822)))
+    py_time = mktime_tz(parsedate_tz(rfc2822))
     return time.strftime("%d %b %Y at %I:%M:%S %p", time.localtime(py_time))
 
 

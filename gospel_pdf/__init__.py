@@ -17,6 +17,7 @@ Changes :
 2.0.6   added : statusbar to show hyperlink url
 2.0.7   added : jump to exact position
 2.0.8   fixed : page not rendered when jump to top=1.0
+2.0.9   fixed : crash for info dialog for pdf with wrong date format
 
 ...........................................................................
 |   Copyright (C) 2017-2019 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -43,4 +44,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #
 
-__version__ = '2.0.8'
+__version__ = '2.0.9'
