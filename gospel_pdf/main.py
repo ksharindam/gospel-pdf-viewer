@@ -724,7 +724,6 @@ class PageWidget(QLabel):
         self.manager = frame
         self.setMouseTracking(True)
         self.setSizePolicy(0,0)
-        self.setFrameShape(QFrame.StyledPanel)
         self.link_areas = []
         self.link_annots = []
         self.annots_listed, self.copy_text_mode = False, False
