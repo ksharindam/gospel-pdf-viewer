@@ -1,0 +1,3 @@
+#!/bin/sh
+cd ..
+pyuic5 -o gospel_pdf/ui_mainwindow.py files/mainwindow.ui

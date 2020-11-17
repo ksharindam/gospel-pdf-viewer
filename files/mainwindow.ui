@@ -81,6 +81,7 @@
     </widget>
     <addaction name="openFileAction"/>
     <addaction name="menuRecentFiles"/>
+    <addaction name="lockUnlockAction"/>
     <addaction name="menuExport"/>
     <addaction name="printAction"/>
     <addaction name="docInfoAction"/>
@@ -355,6 +356,15 @@
    </property>
    <property name="text">
     <string>Last Page</string>
+   </property>
+  </action>
+  <action name="lockUnlockAction">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/unlock.png</normaloff>:/unlock.png</iconset>
+   </property>
+   <property name="text">
+    <string>Encrypt PDF</string>
    </property>
   </action>
  </widget>

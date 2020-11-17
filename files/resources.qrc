@@ -1,6 +1,7 @@
 <RCC>
   <qresource>
     <file>document-print.png</file>
+    <file>unlock.png</file>
     <file>open.png</file>
     <file>save.png</file>
     <file>quit.png</file>

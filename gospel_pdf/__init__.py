@@ -19,6 +19,7 @@ Changes :
 2.0.8   fixed : page not rendered when jump to top=1.0
 2.0.9   fixed : crash for info dialog for pdf with wrong date format
 2.0.10  fixed : cropped few pixels at the borders
+2.0.11  encrypt and decrypt pdf using qpdf program
 
 ...........................................................................
 |   Copyright (C) 2017-2020 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -39,10 +40,9 @@ Changes :
 """
 # TODO:
 #       Show fonts list
-#       save as decrypted/encrypted
 #       resize pages when dock is hidden
 # FIXME :
 #       Search is not cancelled immediately, when cancel is pressed
 #
 
-__version__ = '2.0.10'
+__version__ = '2.0.11'

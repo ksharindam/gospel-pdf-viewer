@@ -3,6 +3,7 @@
 
 import sys, os
 from subprocess import Popen
+from shutil import which
 from PyQt5 import QtCore
 from PyQt5.QtGui import ( QPainter, QColor, QPixmap, QImage, QIcon, QStandardItem,
     QIntValidator, QStandardItemModel
@@ -114,6 +115,7 @@ class Window(QMainWindow, Ui_window):
         self.findTextAction.triggered.connect(self.dockSearch.show)
         # connect menu actions signals
         self.openFileAction.triggered.connect(self.openFile)
+        self.lockUnlockAction.triggered.connect(self.lockUnlock)
         self.printAction.triggered.connect(self.printFile)
         self.quitAction.triggered.connect(self.close)
         self.toPSAction.triggered.connect(self.exportToPS)
@@ -162,6 +164,7 @@ class Window(QMainWindow, Ui_window):
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.copyTextAction)
         self.toolBar.addAction(self.findTextAction)
+        #self.toolBar.addAction(self.saveUnlockedAction)
         self.toolBar.addWidget(spacer)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.quitAction)
@@ -206,8 +209,9 @@ class Window(QMainWindow, Ui_window):
         self.renderer2.rendered.connect(self.setRenderedImage)
         self.thread2.start()
         # Initialize Variables
-        self.first_document = True
+        self.doc = None
         self.filename = ''
+        self.passwd = ''
         self.pages = []
         self.jumped_from = None
         self.max_preload = 1
@@ -240,6 +244,8 @@ class Window(QMainWindow, Ui_window):
         self.recent_files[:] = []
 
     def removeOldDoc(self):
+        if not self.doc:
+            return
         # Save current page number
         self.saveFileData()
         # Remove old document
@@ -254,22 +260,29 @@ class Window(QMainWindow, Ui_window):
     def loadPDFfile(self, filename):
         """ Loads pdf document in all threads """
         filename = os.path.expanduser(filename)
-        self.doc = Poppler.Document.load(filename)
-        if not self.doc : return
+        doc = Poppler.Document.load(filename)
+        if not doc : return
         password = ''
-        if self.doc.isLocked() :
+        if doc.isLocked() :
             password = QInputDialog.getText(self, 'This PDF is locked', 'Enter Password :', 2)[0]
-            if password == '' : sys.exit(1)
-            self.doc.unlock(password.encode(), password.encode())
-        if not self.first_document:
-            self.removeOldDoc()
-        self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
+            if password == '' :
+                if self.doc == None: sys.exit(1)#exif if first document
+                else : return
+            locked = doc.unlock(password.encode(), password.encode())
+            if locked:
+                return QMessageBox.critical(self, "Failed !","Incorrect Password")
+            self.passwd = password
+            self.lockUnlockAction.setText("Save Unlocked")
+        else:
+            self.lockUnlockAction.setText("Encrypt PDF")
+        self.removeOldDoc()
+        doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
                         Poppler.Document.Antialiasing | Poppler.Document.ThinLineSolid )
+        self.doc = doc
         self.filename = filename
         self.pages_count = self.doc.numPages()
         self.current_page = 1
         self.rendered_pages = []
-        self.first_document = False
         self.getOutlines(self.doc)
         # Load Document in other threads
         self.loadFileRequested.emit(self.filename, password)
@@ -350,7 +363,43 @@ class Window(QMainWindow, Ui_window):
         if filename != "":
             self.loadPDFfile(filename)
 
+    def lockUnlock(self):
+        if which("qpdf")==None :
+            self.lockUnlockAction.setEnabled(False)
+            QMessageBox.warning(self, "qpdf Required","qpdf command not found.\nInstall qpdf program.")
+            return
+        if self.lockUnlockAction.text()=="Encrypt PDF":
+            self.encryptPDF()
+            return
+        filename, ext = os.path.splitext(self.filename)
+        new_name = filename + "-unlocked.pdf"
+        proc = Popen(["qpdf", "--decrypt", "--password="+self.passwd, self.filename, new_name])
+        stdout, stderr = proc.communicate()
+        if proc.returncode==0:
+            basename = os.path.basename(new_name)
+            QMessageBox.information(self, "File Saved", "Successfully saved as\n"+basename)
+        else:
+            QMessageBox.warning(self, "Failed !", "Failed to save as unlocked")
+
+    def encryptPDF(self):
+        password, ok = QInputDialog.getText(self, "Lock PDF", "Enter Password :",
+                                                QLineEdit.PasswordEchoOnEdit)
+        if not ok or password=="":
+            return
+        filename, ext = os.path.splitext(self.filename)
+        new_name = filename + "-locked.pdf"
+        proc = Popen(["qpdf", "--encrypt", password, password, '128', '--', self.filename, new_name])
+        stdout, stderr = proc.communicate()
+        if proc.returncode == 0:
+            basename = os.path.basename(new_name)
+            QMessageBox.information(self, "File Saved", "Successfully saved as\n"+basename)
+        else:
+            QMessageBox.warning(self, "Failed !", "Failed to save as Encrypted")
+
     def printFile(self):
+        if which("quikprint")==None :
+            QMessageBox.warning(self, "QuikPrint Required","Install QuikPrint program.")
+            return
         Popen(["quikprint", self.filename])
 
     def exportToPS(self):

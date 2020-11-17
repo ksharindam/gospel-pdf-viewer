@@ -9,3 +9,5 @@ cache/
 debian/
 dist/
 *.egg-info/
+resources_rc.py
+ui_mainwindow.py
