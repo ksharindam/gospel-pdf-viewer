@@ -3,6 +3,7 @@ Poppler based pdf viewer for Linux written in PyQt
 
 **Dependency :**  
 * python3-pyqt5  
+* pyqt5-dev-tools
 * python3-poppler-qt5  
 * quikprint (for print support, optional)  
 * qpdf (to unlock pdf, optional)  
@@ -12,12 +13,13 @@ This program is aimed at short startup time, with all generally used features.
 This is a evince or qpdfview alternative for linux users.
 
 ### Installation
-To Install this program open terminal inside gospel-pdf-viewer-master directory.  
+To Install this program open terminal inside gospel-pdf-viewer directory.  
 First compile UI and Resources file  
 `cd files`  
 `./compile_ui`  
-`./compile_rc`  
+`./compile_rc`
 `cd ..`  
+`pyrcc5 -o gospel_pdf/resources_rc.py files/resources.qrc`
 And then run following command..  
 `sudo pip3 install .`  
 or  
