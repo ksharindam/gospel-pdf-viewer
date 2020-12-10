@@ -17,9 +17,8 @@ To Install this program open terminal inside gospel-pdf-viewer directory.
 First compile UI and Resources file  
 `cd files`  
 `./compile_ui`  
-`./compile_rc`
+`./compile_rc`  
 `cd ..`  
-`pyrcc5 -o gospel_pdf/resources_rc.py files/resources.qrc`
 And then run following command..  
 `sudo pip3 install .`  
 or  
