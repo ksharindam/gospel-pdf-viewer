@@ -3,6 +3,7 @@ Poppler based pdf viewer for Linux written in PyQt
 
 **Dependency :**  
 * python3-pyqt5  
+* pyqt5-dev-tools  
 * python3-poppler-qt5  
 * quikprint (for print support, optional)  
 * qpdf (to unlock pdf, optional)  
