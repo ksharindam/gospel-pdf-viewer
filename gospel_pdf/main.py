@@ -166,6 +166,8 @@ class Window(QMainWindow, Ui_window):
         self.toolBar.addAction(self.findTextAction)
         #self.toolBar.addAction(self.saveUnlockedAction)
         self.toolBar.addWidget(spacer)
+        self.attachAction = self.toolBar.addAction(QIcon(":/attachment.png"), "A")
+        self.attachAction.setVisible(False)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.quitAction)
         # Add widgets
@@ -254,6 +256,7 @@ class Window(QMainWindow, Ui_window):
         for i in range(len(self.pages)):
             self.pages.pop().deleteLater()
         self.frame.deleteLater()
+        self.attachAction.setVisible(False)
         self.jumped_from = None
         self.addRecentFiles()
 
@@ -290,7 +293,9 @@ class Window(QMainWindow, Ui_window):
             self.current_page = int(self.history_page_no[self.history_filenames.index(collapseUser(self.filename))])
         self.current_page = min(self.current_page, self.pages_count)
         self.scroll_render_lock = False
-        # Add widgets
+        # Show/Add widgets
+        if self.doc.hasEmbeddedFiles():
+            self.attachAction.setVisible(True)
         self.frame = Frame(self.scrollAreaWidgetContents, self.scrollArea)
         self.verticalLayout = QVBoxLayout(self.frame)
         self.horizontalLayout_2.addWidget(self.frame)
@@ -440,8 +445,8 @@ class Window(QMainWindow, Ui_window):
         values = [self.doc.info(key) for key in info_keys]
         page_size = self.doc.page(self.current_page-1).pageSizeF()
         page_size = "%s x %s pts"%(page_size.width(), page_size.height())
-        info_keys += ['Embedded FIles', 'Page Size']
-        values += [str(self.doc.hasEmbeddedFiles()), page_size]
+        info_keys += ['Page Size']
+        values += [page_size]
         dialog = DocInfoDialog(self)
         dialog.setInfo(info_keys, values)
         dialog.exec_()

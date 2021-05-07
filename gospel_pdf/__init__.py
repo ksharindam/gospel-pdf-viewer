@@ -20,9 +20,10 @@ Changes :
 2.0.9   fixed : crash for info dialog for pdf with wrong date format
 2.0.10  fixed : cropped few pixels at the borders
 2.0.11  encrypt and decrypt pdf using qpdf program
+2.0.12  show an icon if pdf has attached file
 
 ...........................................................................
-|   Copyright (C) 2017-2020 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2017-2021 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -45,4 +46,4 @@ Changes :
 #       Search is not cancelled immediately, when cancel is pressed
 #
 
-__version__ = '2.0.11'
+__version__ = '2.0.12'
