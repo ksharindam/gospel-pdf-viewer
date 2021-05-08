@@ -363,7 +363,7 @@ class Window(QMainWindow, Ui_window):
 
     def openFile(self):
         filename, sel_filter = QFileDialog.getOpenFileName(self,
-                                      "Select Document to Open", "",
+                                      "Select Document to Open", self.filename,
                                       "Portable Document Format (*.pdf);;All Files (*)" )
         if filename != "":
             self.loadPDFfile(filename)
