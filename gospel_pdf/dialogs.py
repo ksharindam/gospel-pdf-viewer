@@ -6,7 +6,7 @@ from email.utils import parsedate_tz, mktime_tz
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QIntValidator
 from PyQt5.QtWidgets import ( QDialog, QDialogButtonBox, QGridLayout, QLineEdit, QSpinBox,
-    QLabel, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView
+    QLabel, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QCheckBox
 )
 
 class ExportToImageDialog(QDialog):
@@ -22,20 +22,35 @@ class ExportToImageDialog(QDialog):
         pageNoLabel = QLabel('Page No. :', self)
         self.pageNoSpin = QSpinBox(self)
         self.pageNoSpin.setAlignment(QtCore.Qt.AlignHCenter)
+        self.toPageNoBtn = QCheckBox("To Page No :", self)
+        self.toPageNoSpin = QSpinBox(self)
+        self.toPageNoSpin.setAlignment(QtCore.Qt.AlignHCenter)
+        self.toPageNoSpin.setEnabled(False)
         self.buttonBox = QDialogButtonBox(self)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         layout.addWidget(dpiLabel, 0,0,1,1)
         layout.addWidget(self.dpiEdit, 0,1,1,1)
         layout.addWidget(pageNoLabel, 1,0,1,1)
         layout.addWidget(self.pageNoSpin, 1,1,1,1)
-        layout.addWidget(self.buttonBox, 2, 0, 1, 2)
+        layout.addWidget(self.toPageNoBtn, 2,0,1,1)
+        layout.addWidget(self.toPageNoSpin, 2,1,1,1)
+        layout.addWidget(self.buttonBox, 3, 0, 1, 2)
 
         # set values
         self.pageNoSpin.setRange(1, total_pages)
         self.pageNoSpin.setValue(page_no)
+        self.toPageNoSpin.setRange(1, total_pages)
+        self.toPageNoSpin.setValue(page_no)
         # connect signals
+        self.toPageNoBtn.clicked.connect(self.toPageNoSpin.setEnabled)
+        self.pageNoSpin.valueChanged.connect(self.onStartPageNoChange)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
+
+    def onStartPageNoChange(self, val):
+        self.toPageNoSpin.setMinimum(val)
+        if not self.toPageNoBtn.isChecked():
+            self.toPageNoSpin.setValue(val)
 
 
 class DocInfoDialog(QDialog):

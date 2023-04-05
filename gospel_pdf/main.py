@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout, QLabel,
     QFileDialog, QInputDialog, QAction, QLineEdit,
     QComboBox, QMessageBox,
-    QDialog
+    QDialog, QSystemTrayIcon
 )
 
 from popplerqt5 import Poppler
@@ -381,8 +381,8 @@ class Window(QMainWindow, Ui_window):
         proc = Popen(["qpdf", "--decrypt", "--password="+self.passwd, self.filename, new_name])
         stdout, stderr = proc.communicate()
         if proc.returncode==0:
-            basename = os.path.basename(new_name)
-            QMessageBox.information(self, "File Saved", "Successfully saved as\n"+basename)
+            notifier = Notifier(self)
+            notifier.showNotification("Successful !", "File saved as\n"+os.path.basename(new_name))
         else:
             QMessageBox.warning(self, "Failed !", "Failed to save as unlocked")
 
@@ -397,7 +397,8 @@ class Window(QMainWindow, Ui_window):
         stdout, stderr = proc.communicate()
         if proc.returncode == 0:
             basename = os.path.basename(new_name)
-            QMessageBox.information(self, "File Saved", "Successfully saved as\n"+basename)
+            notifier = Notifier(self)
+            notifier.showNotification("Successful !", "File saved as\n"+basename)
         else:
             QMessageBox.warning(self, "Failed !", "Failed to save as Encrypted")
 
@@ -421,7 +422,8 @@ class Window(QMainWindow, Ui_window):
         conv.setPageList([i+1 for i in range(self.pages_count)])
         ok = conv.convert()
         if ok:
-            QMessageBox.information(self, "Successful !","File has been successfully exported")
+            notifier = Notifier(self)
+            notifier.showNotification("Successful !", "File has been successfully saved")
         else:
             QMessageBox.warning(self, "Failed !","Failed to export to Postscript")
 
@@ -430,13 +432,14 @@ class Window(QMainWindow, Ui_window):
         if dialog.exec_() == QDialog.Accepted:
             try:
                 dpi = int(dialog.dpiEdit.text())
-                page_no = dialog.pageNoSpin.value()
-                filename = os.path.splitext(self.filename)[0]+'-'+str(page_no)+'.jpg'
-                page = self.doc.page(page_no-1)
-                if not page : return
-                img = page.renderToImage(dpi, dpi)
-                img.save(filename)
-                QMessageBox.information(self, "Successful !","Page has been successfully exported")
+                for page_no in range(dialog.pageNoSpin.value(), dialog.toPageNoSpin.value()+1):
+                    filename = os.path.splitext(self.filename)[0]+'-'+str(page_no)+'.jpg'
+                    page = self.doc.page(page_no-1)
+                    if not page : return
+                    img = page.renderToImage(dpi, dpi)
+                    img.save(filename)
+                notifier = Notifier(self)
+                notifier.showNotification("Successful !","Image(s) has been saved")
             except:
                 QMessageBox.warning(self, "Failed !","Failed to export to Image")
 
@@ -885,6 +888,22 @@ class PageWidget(QLabel):
             self.setPixmap(img)
         else:
             self.setPixmap(self.image)
+
+
+
+class Notifier(QSystemTrayIcon):
+    def __init__(self, parent):
+        QSystemTrayIcon.__init__(self, QIcon(':/adobe.png'), parent)
+        self.messageClicked.connect(self.deleteLater)
+        self.activated.connect(self.deleteLater)
+
+    def showNotification(self, title, message):
+        self.show()
+        # Wait for 200ms, otherwise notification bubble will showup in wrong position.
+        wait(200)
+        self.showMessage(title, message)
+        QtCore.QTimer.singleShot(4000, self.deleteLater)
+
 
 
 def wait(millisec):

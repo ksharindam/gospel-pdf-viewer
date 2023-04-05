@@ -8,6 +8,7 @@ __pycache__/
 cache/
 debian/
 dist/
+build/
 *.egg-info/
 resources_rc.py
 ui_mainwindow.py
