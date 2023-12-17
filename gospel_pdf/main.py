@@ -178,9 +178,11 @@ class Window(QMainWindow, Ui_window):
         # Impoort settings
         desktop = QApplication.desktop()
         self.settings = QtCore.QSettings("gospel-pdf", "main", self)
-        self.recent_files = self.settings.value("RecentFiles", [])
-        self.history_filenames = self.settings.value("HistoryFileNameList", [])
-        self.history_page_no = self.settings.value("HistoryPageNoList", [])
+        # QSettings.value() function returns None if previously saved value
+        # was empty list. In that case adding "or []" avoids crash.
+        self.recent_files = self.settings.value("RecentFiles", []) or []
+        self.history_filenames = self.settings.value("HistoryFileNameList", []) or []
+        self.history_page_no = self.settings.value("HistoryPageNoList", []) or []
         self.offset_x = int(self.settings.value("OffsetX", 4))
         self.offset_y = int(self.settings.value("OffsetY", 26))
         self.available_area = [desktop.availableGeometry().width(), desktop.availableGeometry().height()]

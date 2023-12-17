@@ -32,4 +32,4 @@ Description = A poppler based PDF viewer written in PyQt
 #       Search is not cancelled immediately, when cancel is pressed
 #
 
-__version__ = '2.1.0'
+__version__ = '2.1.1'
