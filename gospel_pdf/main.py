@@ -4,7 +4,8 @@
 import sys, os
 from subprocess import Popen
 from shutil import which
-from PyQt5 import QtCore
+from PyQt5.QtCore import ( Qt, QObject, pyqtSignal, QRectF, QPoint, QSettings,
+    QTimer, QThread, QEventLoop )
 from PyQt5.QtGui import ( QPainter, QColor, QPixmap, QImage, QIcon, QStandardItem,
     QIntValidator, QStandardItemModel
 )
@@ -15,13 +16,13 @@ from PyQt5.QtWidgets import (
     QDialog, QSystemTrayIcon
 )
 
-from popplerqt5 import Poppler
 sys.path.append(os.path.dirname(__file__)) # for enabling python 2 like import
 
 import resources_rc
 from __init__ import __version__
 from ui_mainwindow import Ui_window
 from dialogs import ExportToImageDialog, DocInfoDialog
+from pdf_lib import PdfDocument
 
 DEBUG = False
 def debug(*args):
@@ -32,64 +33,58 @@ HOMEDIR = os.path.expanduser("~")
 
 #pt2pixel = lambda point, dpi : dpi*point/72.0
 
-class Renderer(QtCore.QObject):
-    rendered = QtCore.pyqtSignal(int, QImage)
-    textFound = QtCore.pyqtSignal(int, list)
+class Renderer(QObject):
+    rendered = pyqtSignal(int, QImage)
+    textFound = pyqtSignal(int, list)
 
     def __init__(self, page_set=1):
         # page_set = 1 for odd, and 0 for even
-        QtCore.QObject.__init__(self)
+        QObject.__init__(self)
         self.doc = None
         self.page_set = page_set
         self.painter = QPainter()
         self.link_color = QColor(0,0,127, 40)
 
+    def loadDocument(self, filename, password=''):
+        """ Main thread uses this slot to load document for rendering """
+        self.doc = PdfDocument(filename)
+        if self.doc.isLocked():
+            self.doc.unlock(password)
+
     def render(self, page_no, dpi):
-        """ render(int, float)
+        """ render(int, int)
         This slot takes page no. and dpi and renders that page, then emits a signal with QImage"""
         # Returns when both is true or both is false
         if page_no%2 != self.page_set:
             return
-        page = self.doc.page(page_no-1)
-        if not page :
-            return
-        img = page.renderToImage(dpi, dpi)
+        img = self.doc.renderPage(page_no, dpi)
         # Add Heighlight over Link Annotation
         self.painter.begin(img)
-        annots = page.annotations()
-        for annot in annots:
-          if annot.subType() == Poppler.Annotation.ALink:
-            x, y = annot.boundary().left()*img.width(), annot.boundary().top()*img.height()
-            w, h = annot.boundary().width()*img.width()+1, annot.boundary().height()*img.height()+1
-            self.painter.fillRect(x, y, w, h, self.link_color)
+        annots = self.doc.pageLinkAnnotations(page_no)
+        for subtype,rect,data in annots:
+            x,y,w,h = [x*dpi/72 for x in rect]
+            self.painter.fillRect(x, y, w+1, h+1, self.link_color)
         self.painter.end()
         self.rendered.emit(page_no, img)
 
-    def loadDocument(self, filename, password=''):
-        """ loadDocument(str)
-        Main thread uses this slot to load document for rendering """
-        self.doc = Poppler.Document.load(filename, password.encode(), password.encode())
-        self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
-                        Poppler.Document.Antialiasing | Poppler.Document.ThinLineSolid )
 
     def findText(self, text, page_num, find_reverse):
         if find_reverse:
             pages = [i for i in range(1,page_num+1)]
             pages.reverse()
         else:
-            pages = [i for i in range(page_num, self.doc.numPages()+1)]
+            pages = [i for i in range(page_num, self.doc.pageCount()+1)]
         for page_no in pages:
-            page = self.doc.page(page_no-1)
-            textareas = page.search(text,Poppler.Page.CaseInsensitive,0)
+            textareas = self.doc.findText(page_no, text)
             if textareas != []:
                 self.textFound.emit(page_no, textareas)
                 break
 
 
 class Window(QMainWindow, Ui_window):
-    renderRequested = QtCore.pyqtSignal(int, float)
-    loadFileRequested = QtCore.pyqtSignal(str, str)
-    findTextRequested = QtCore.pyqtSignal(str, int, bool)
+    renderRequested = pyqtSignal(int, int)
+    loadFileRequested = pyqtSignal(str, str)
+    findTextRequested = pyqtSignal(str, int, bool)
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -97,11 +92,11 @@ class Window(QMainWindow, Ui_window):
         self.dockSearch.hide()
         self.dockWidget.hide()
         self.dockWidget.setMinimumWidth(310)
-        self.findTextEdit.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.findTextEdit.setFocusPolicy(Qt.StrongFocus)
         self.treeView.setAlternatingRowColors(True)
         self.treeView.clicked.connect(self.onOutlineClick)
         # resizing pages requires some time to take effect
-        self.resize_page_timer = QtCore.QTimer(self)
+        self.resize_page_timer = QTimer(self)
         self.resize_page_timer.setSingleShot(True)
         self.resize_page_timer.timeout.connect(self.onWindowResize)
         # Add shortcut actions
@@ -118,7 +113,6 @@ class Window(QMainWindow, Ui_window):
         self.lockUnlockAction.triggered.connect(self.lockUnlock)
         self.printAction.triggered.connect(self.printFile)
         self.quitAction.triggered.connect(self.close)
-        self.toPSAction.triggered.connect(self.exportToPS)
         self.pageToImageAction.triggered.connect(self.exportPageToImage)
         self.docInfoAction.triggered.connect(self.docInfo)
         self.zoominAction.triggered.connect(self.zoomIn)
@@ -177,7 +171,7 @@ class Window(QMainWindow, Ui_window):
         self.statusbar.hide()
         # Impoort settings
         desktop = QApplication.desktop()
-        self.settings = QtCore.QSettings("gospel-pdf", "main", self)
+        self.settings = QSettings("gospel-pdf", "main", self)
         # QSettings.value() function returns None if previously saved value
         # was empty list. In that case adding "or []" avoids crash.
         self.recent_files = self.settings.value("RecentFiles", []) or []
@@ -196,7 +190,7 @@ class Window(QMainWindow, Ui_window):
         self.findCloseButton.clicked.connect(self.dockSearch.hide)
         self.dockSearch.visibilityChanged.connect(self.toggleFindMode)
         # Create separate thread and move renderer to it
-        self.thread1 = QtCore.QThread(self)
+        self.thread1 = QThread(self)
         self.renderer1 = Renderer(0)
         self.renderer1.moveToThread(self.thread1) # this must be moved before connecting signals
         self.renderRequested.connect(self.renderer1.render)
@@ -205,7 +199,7 @@ class Window(QMainWindow, Ui_window):
         self.renderer1.rendered.connect(self.setRenderedImage)
         self.renderer1.textFound.connect(self.onTextFound)
         self.thread1.start()
-        self.thread2 = QtCore.QThread(self)
+        self.thread2 = QThread(self)
         self.renderer2 = Renderer(1)
         self.renderer2.moveToThread(self.thread2)
         self.renderRequested.connect(self.renderer2.render)
@@ -264,36 +258,36 @@ class Window(QMainWindow, Ui_window):
 
     def loadPDFfile(self, filename):
         """ Loads pdf document in all threads """
+        print("opening : ", filename)
         filename = os.path.expanduser(filename)
-        doc = Poppler.Document.load(filename)
-        if not doc : return
+        doc = PdfDocument(filename)
+        if not doc.isValid():
+            return
         password = ''
         if doc.isLocked() :
             password = QInputDialog.getText(self, 'This PDF is locked', 'Enter Password :', 2)[0]
             if password == '' :
-                if self.doc == None: sys.exit(1)#exif if first document
+                if self.doc == None: sys.exit(1)#exit if first document
                 else : return
-            locked = doc.unlock(password.encode(), password.encode())
-            if locked:
+            unlocked = doc.unlock(password)
+            if not unlocked:
                 return QMessageBox.critical(self, "Failed !","Incorrect Password")
             self.passwd = password
             self.lockUnlockAction.setText("Save Unlocked")
         else:
             self.lockUnlockAction.setText("Encrypt PDF")
         self.removeOldDoc()
-        doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
-                        Poppler.Document.Antialiasing | Poppler.Document.ThinLineSolid )
         self.doc = doc
         self.filename = filename
-        self.pages_count = self.doc.numPages()
-        self.current_page = 1
+        self.pages_count = self.doc.pageCount()
+        self.curr_page_no = 1
         self.rendered_pages = []
-        self.getOutlines(self.doc)
+        self.getOutlines()
         # Load Document in other threads
         self.loadFileRequested.emit(self.filename, password)
         if collapseUser(self.filename) in self.history_filenames:
-            self.current_page = int(self.history_page_no[self.history_filenames.index(collapseUser(self.filename))])
-        self.current_page = min(self.current_page, self.pages_count)
+            self.curr_page_no = int(self.history_page_no[self.history_filenames.index(collapseUser(self.filename))])
+        self.curr_page_no = min(self.curr_page_no, self.pages_count)
         self.scroll_render_lock = False
         # Show/Add widgets
         if self.doc.hasEmbeddedFiles():
@@ -311,23 +305,23 @@ class Window(QMainWindow, Ui_window):
         # Add pages
         for i in range(self.pages_count):
             page = PageWidget(i+1, self.frame)
-            self.verticalLayout.addWidget(page, 0, QtCore.Qt.AlignCenter)
+            self.verticalLayout.addWidget(page, 0, Qt.AlignCenter)
             self.pages.append(page)
         self.resizePages()
-        self.pageNoLabel.setText('<b>%i/%i</b>' % (self.current_page, self.pages_count) )
+        self.pageNoLabel.setText('<b>%i/%i</b>' % (self.curr_page_no, self.pages_count) )
         self.gotoPageValidator.setTop(self.pages_count)
         self.setWindowTitle(os.path.basename(self.filename)+ " - Gospel PDF " + __version__)
-        if self.current_page != 1 :
-            QtCore.QTimer.singleShot(150+self.pages_count//3, self.jumpToCurrentPage)
+        if self.curr_page_no != 1 :
+            QTimer.singleShot(150+self.pages_count//3, self.jumpToCurrentPage)
 
     def setRenderedImage(self, page_no, image):
         """ takes a QImage and sets pixmap of the specified page
             when number of rendered pages exceeds a certain number, old page image is
             deleted to save memory """
         debug("Set Rendered Image :", page_no)
-        self.pages[page_no-1].setPageData(page_no, QPixmap.fromImage(image), self.doc.page(page_no-1))
+        self.pages[page_no-1].setPageData(page_no, QPixmap.fromImage(image), self.doc)
         # Request to render next page
-        if self.current_page <= page_no < (self.current_page + self.max_preload - 2):
+        if self.curr_page_no <= page_no < (self.curr_page_no + self.max_preload - 2):
             if (page_no+2 not in self.rendered_pages) and (page_no+2 <= self.pages_count):
               self.rendered_pages.append(page_no+2)
               self.renderRequested.emit(page_no+2, self.pages[page_no+1].dpi)
@@ -342,8 +336,9 @@ class Window(QMainWindow, Ui_window):
         """ Requests to render current page. if it is already rendered, then request
             to render next unrendered page """
         requested = 0
-        for page_no in range(self.current_page, self.current_page+self.max_preload):
-            if (page_no not in self.rendered_pages) and (page_no <= self.pages_count):
+        for page_no in range(self.curr_page_no, self.curr_page_no+self.max_preload):
+            # using self.pages_count instead of len(self.pages) caused crash sometimes
+            if (page_no not in self.rendered_pages) and (page_no <= len(self.pages)):
                 self.rendered_pages.append(page_no)
                 self.renderRequested.emit(page_no, self.pages[page_no-1].dpi)
                 requested += 1
@@ -357,7 +352,7 @@ class Window(QMainWindow, Ui_window):
         if index == -1: return
         self.pageNoLabel.setText('<b>%i/%i</b>' % (index+1, self.pages_count) )
         if self.scrollArea.verticalScrollBar().isSliderDown() or self.scroll_render_lock : return
-        self.current_page = index+1
+        self.curr_page_no = index+1
         self.renderCurrentPage()
 
     def onSliderRelease(self):
@@ -410,35 +405,14 @@ class Window(QMainWindow, Ui_window):
             return
         Popen(["quikprint", self.filename])
 
-    def exportToPS(self):
-        width = self.doc.page(self.current_page-1).pageSizeF().width()
-        height = self.doc.page(self.current_page-1).pageSizeF().height()
-        filename, sel_filter = QFileDialog.getSaveFileName(self, "Select File to Save",
-                                       os.path.splitext(self.filename)[0]+'.ps',
-                                      "Adobe Postscript Format (*.ps)" )
-        if filename == '' : return
-        conv = self.doc.psConverter()
-        conv.setPaperWidth(width)
-        conv.setPaperHeight(height)
-        conv.setOutputFileName(filename)
-        conv.setPageList([i+1 for i in range(self.pages_count)])
-        ok = conv.convert()
-        if ok:
-            notifier = Notifier(self)
-            notifier.showNotification("Successful !", "File has been successfully saved")
-        else:
-            QMessageBox.warning(self, "Failed !","Failed to export to Postscript")
-
     def exportPageToImage(self):
-        dialog = ExportToImageDialog(self.current_page, self.pages_count, self)
+        dialog = ExportToImageDialog(self.curr_page_no, self.pages_count, self)
         if dialog.exec_() == QDialog.Accepted:
             try:
                 dpi = int(dialog.dpiEdit.text())
                 for page_no in range(dialog.pageNoSpin.value(), dialog.toPageNoSpin.value()+1):
                     filename = os.path.splitext(self.filename)[0]+'-'+str(page_no)+'.jpg'
-                    page = self.doc.page(page_no-1)
-                    if not page : return
-                    img = page.renderToImage(dpi, dpi)
+                    img = self.doc.renderPage(page_no, dpi)
                     img.save(filename)
                 notifier = Notifier(self)
                 notifier.showNotification("Successful !","Image(s) has been saved")
@@ -446,29 +420,26 @@ class Window(QMainWindow, Ui_window):
                 QMessageBox.warning(self, "Failed !","Failed to export to Image")
 
     def docInfo(self):
-        info_keys = list(self.doc.infoKeys())
-        values = [self.doc.info(key) for key in info_keys]
-        page_size = self.doc.page(self.current_page-1).pageSizeF()
-        page_size = "%s x %s pts"%(page_size.width(), page_size.height())
-        info_keys += ['Page Size']
-        values += [page_size]
-        dialog = DocInfoDialog(self)
-        dialog.setInfo(info_keys, values)
+        info = self.doc.info()
+        page_size = "%.1f x %.1f pts" % self.doc.pageSize(self.curr_page_no)
+        info['Page Size'] = page_size
+        dialog = DocInfoDialog(info, self)
         dialog.exec_()
 
     def jumpToCurrentPage(self):
         """ this is used as a slot, to connect with a timer"""
-        self.jumpToPage(self.current_page)
+        self.jumpToPage(self.curr_page_no)
 
     def jumpToPage(self, page_num, top=0.0):
         """ scrolls to a particular page and position """
         if page_num < 1: page_num = 1
         elif page_num > self.pages_count: page_num = self.pages_count
-        if not (0 < top < 1.0) : top = 0
-        self.jumped_from = self.current_page
-        self.current_page = page_num
+        top *= self.pages[page_num-1].dpi/72
+        if not (0 < top < self.pages[page_num-1].height()): top = 0
+        self.jumped_from = self.curr_page_no
+        self.curr_page_no = page_num
         scrollbar_pos = self.pages[page_num-1].pos().y()
-        scrollbar_pos += top*self.pages[page_num-1].height()
+        scrollbar_pos += top
         self.scrollArea.verticalScrollBar().setValue(scrollbar_pos)
 
     def undoJump(self):
@@ -476,12 +447,12 @@ class Window(QMainWindow, Ui_window):
         self.jumpToPage(self.jumped_from)
 
     def goNextPage(self):
-        if self.current_page == self.pages_count : return
-        self.jumpToPage(self.current_page + 1)
+        if self.curr_page_no == self.pages_count : return
+        self.jumpToPage(self.curr_page_no + 1)
 
     def goPrevPage(self):
-        if self.current_page == 1 : return
-        self.jumpToPage(self.current_page - 1)
+        if self.curr_page_no == 1 : return
+        self.jumpToPage(self.curr_page_no - 1)
 
     def goFirstPage(self):
         self.jumpToPage(1)
@@ -504,15 +475,15 @@ class Window(QMainWindow, Ui_window):
         return self.width() - dock_width - 50
 
     def resizePages(self):
-        '''Resize all pages according to zoom level '''
+        ''' Resize all pages according to zoom level '''
         page_dpi = self.zoom_levels[self.zoomLevelCombo.currentIndex()]*SCREEN_DPI/100
         fixed_width = self.availableWidth()
         for i in range(self.pages_count):
-            pg_width = self.doc.page(i).pageSizeF().width() # width in points
-            pg_height = self.doc.page(i).pageSizeF().height()
+            pg_width, pg_height = self.doc.pageSize(i+1) # width in points
             if self.zoomLevelCombo.currentIndex() == 0: # if fixed width
-                dpi = 72.0*fixed_width/pg_width
-            else: dpi = page_dpi
+                dpi = int(72.0*fixed_width/pg_width)
+            else:
+                dpi = int(page_dpi)
             self.pages[i].dpi = dpi
             self.pages[i].setFixedSize(pg_width*dpi/72.0, pg_height*dpi/72.0)
         for page_no in self.rendered_pages:
@@ -524,7 +495,7 @@ class Window(QMainWindow, Ui_window):
         """ Gets called when zoom level is changed"""
         self.scroll_render_lock = True # rendering on scroll is locked as set scroll position
         self.resizePages()
-        QtCore.QTimer.singleShot(300, self.afterZoom)
+        QTimer.singleShot(300, self.afterZoom)
 
     def zoomIn(self):
         index = self.zoomLevelCombo.currentIndex()
@@ -541,7 +512,7 @@ class Window(QMainWindow, Ui_window):
         self.setZoom(index-1)
 
     def afterZoom(self):
-        scrolbar_pos = self.pages[self.current_page-1].pos().y()
+        scrolbar_pos = self.pages[self.curr_page_no-1].pos().y()
         self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
         self.scroll_render_lock = False
 #########            Search Text            #########
@@ -561,7 +532,7 @@ class Window(QMainWindow, Ui_window):
         if text == "" : return
         # search from current page when text changed
         if self.search_text != text or self.search_result_page == 0:
-            search_from_page = self.current_page
+            search_from_page = self.curr_page_no
         else:
             search_from_page = self.search_result_page + 1
         self.findTextRequested.emit(text, search_from_page, False)
@@ -576,7 +547,7 @@ class Window(QMainWindow, Ui_window):
         text = self.findTextEdit.text()
         if text == "" : return
         if self.search_text != text or self.search_result_page == 0:
-            search_from_page = self.current_page
+            search_from_page = self.curr_page_no
         else:
             search_from_page = self.search_result_page - 1
         self.findTextRequested.emit(text, search_from_page, True)
@@ -591,33 +562,52 @@ class Window(QMainWindow, Ui_window):
         self.search_result_page = page_no
         if self.pages[page_no-1].pixmap():
             self.pages[page_no-1].updateImage()
-        first_result_pos = areas[0].y()/self.doc.page(page_no-1).pageSize().height()
+        first_result_pos = areas[0][1]
         self.jumpToPage(page_no, first_result_pos)
 
 #########      Cpoy Text to Clip Board      #########
     def toggleCopyText(self, checked):
         self.frame.enableCopyTextMode(checked)
 
-    def copyText(self, page_no, top_left, bottom_right):
-        zoom = self.pages[page_no-1].height()/self.doc.page(page_no-1).pageSize().height()
+    def copyText(self, page_no, rect):
+        zoom = self.pages[page_no-1].dpi/72
+        rect = [x/zoom for x in rect]
         # Copy text to clipboard
-        text = self.doc.page(page_no-1).text(QtCore.QRectF(top_left/zoom, bottom_right/zoom))
+        text = self.doc.getPageText(page_no, rect)
         QApplication.clipboard().setText(text)
         self.copyTextAction.setChecked(False)
         self.toggleCopyText(False)
 
 ##########      Other Functions      ##########
 
-    def getOutlines(self, doc):
-        toc = doc.toc()
+    def getOutlines(self):
+        toc = self.doc.toc()
         if not toc:
             self.dockWidget.hide()
             return
         self.dockWidget.show()
         outline_model = QStandardItemModel(self)
         parent_item = outline_model.invisibleRootItem()
-        node = toc.firstChild()
-        loadOutline(doc, node, parent_item)
+        parent_items = [parent_item]
+
+        for level,title,page_no,top in toc:
+            parent_item = parent_items[level-1]
+            item = QStandardItem(title)
+            if page_no>0:
+                item.setData(page_no, Qt.UserRole + 1)
+                item.setData(top, Qt.UserRole + 2)
+
+                pageItem = item.clone()
+                pageItem.setText(str(page_no))
+                pageItem.setTextAlignment(Qt.AlignRight)
+                parent_item.appendRow([item, pageItem])
+            else:
+                parent_item.appendRow([item])
+
+            while len(parent_items)!=level:
+                parent_items.pop()
+            parent_items.append(item)
+
         self.treeView.setModel(outline_model)
         if parent_item.rowCount() < 4:
             self.treeView.expandToDepth(0)
@@ -627,8 +617,8 @@ class Window(QMainWindow, Ui_window):
         self.treeView.header().setStretchLastSection(False)
 
     def onOutlineClick(self, m_index):
-        page_num = self.treeView.model().data(m_index, QtCore.Qt.UserRole+1)
-        top = self.treeView.model().data(m_index, QtCore.Qt.UserRole+2)
+        page_num = self.treeView.model().data(m_index, Qt.UserRole+1)
+        top = self.treeView.model().data(m_index, Qt.UserRole+2)
         if not page_num: return
         self.jumpToPage(page_num, top)
 
@@ -662,10 +652,10 @@ class Window(QMainWindow, Ui_window):
             filename = collapseUser(self.filename)
             if filename in self.history_filenames:
                 index = self.history_filenames.index(filename)
-                self.history_page_no[index] = self.current_page
+                self.history_page_no[index] = self.curr_page_no
             else:
                 self.history_filenames.insert(0, filename)
-                self.history_page_no.insert(0, self.current_page)
+                self.history_page_no.insert(0, self.curr_page_no)
             if filename in self.recent_files:
                 self.recent_files.remove(filename)
             self.recent_files.insert(0, filename)
@@ -683,8 +673,8 @@ class Window(QMainWindow, Ui_window):
 
     def onAppQuit(self):
         """ Close running threads """
-        loop1 = QtCore.QEventLoop()
-        loop2 = QtCore.QEventLoop()
+        loop1 = QEventLoop()
+        loop2 = QEventLoop()
         self.thread1.finished.connect(loop1.quit)
         self.thread2.finished.connect(loop2.quit)
         self.thread1.quit()
@@ -693,51 +683,13 @@ class Window(QMainWindow, Ui_window):
         loop2.exec_()
 
 
-def loadOutline(doc, node, parent_item):
-    """loadOutline(Poppler::Document* doc, const QDomNode& node, QStandardItem* parent_item) """
-    element = node.toElement()
-    item = QStandardItem(element.tagName())
-
-    linkDestination = None
-    if element.hasAttribute("Destination"):
-        linkDestination = Poppler.LinkDestination(element.attribute("Destination"))
-    elif element.hasAttribute("DestinationName"):
-        linkDestination = doc.linkDestination(element.attribute("DestinationName"))
-
-    if linkDestination:
-        # NOTE: in some files page_num may be in range 1 -> pages_count,
-        # also, top may be not in range 0.0->1.0, we have to take care of that
-        page_num = linkDestination.pageNumber()
-        top = linkDestination.top() if linkDestination.isChangeTop() else 0
-
-        item.setData(page_num, QtCore.Qt.UserRole + 1)
-        item.setData(top, QtCore.Qt.UserRole + 2)
-
-        pageItem = item.clone()
-        pageItem.setText(str(page_num))
-        pageItem.setTextAlignment(QtCore.Qt.AlignRight)
-
-        parent_item.appendRow([item, pageItem])
-    else:
-        parent_item.appendRow(item)
-
-    # Load next sibling
-    siblingNode = node.nextSibling()
-    if not siblingNode.isNull():
-        loadOutline(doc, siblingNode, parent_item)
-
-    # Load its child
-    childNode = node.firstChild()
-    if not childNode.isNull():
-        loadOutline(doc, childNode, item)
-
 
 class Frame(QFrame):
     """ This widget is a container of PageWidgets. PageWidget communicates
         Window through this widget """
-    jumpToRequested = QtCore.pyqtSignal(int, float)
-    copyTextRequested = QtCore.pyqtSignal(int, QtCore.QPoint, QtCore.QPoint)
-    showStatusRequested = QtCore.pyqtSignal(str)
+    jumpToRequested = pyqtSignal(int, float)
+    copyTextRequested = pyqtSignal(int, list)
+    showStatusRequested = pyqtSignal(str)
     # parent is scrollAreaWidgetContents
     def __init__(self, parent, scrollArea):
         QFrame.__init__(self, parent)
@@ -769,8 +721,8 @@ class Frame(QFrame):
     def enableCopyTextMode(self, enable):
         self.copy_text_mode = enable
 
-    def copyText(self, page_num, top_left, bottom_right):
-        self.copyTextRequested.emit(page_num, top_left, bottom_right)
+    def copyText(self, page_num, rect):
+        self.copyTextRequested.emit(page_num, rect)
 
     def showStatus(self, msg):
         self.showStatusRequested.emit(msg)
@@ -789,18 +741,18 @@ class PageWidget(QLabel):
         self.click_point, self.highlight_area = None, None
         self.page_num = page_num
         self.image = QPixmap()
+        self.dpi = 72# dpi is set when pages are resized
 
-    def setPageData(self, page_no, pixmap, page):
+    def setPageData(self, page_no, pixmap, doc):
         self.image = pixmap
         self.updateImage()
         if self.annots_listed : return
-        annots = page.annotations()
-        for annot in annots:
-            if annot.subType() == Poppler.Annotation.ALink:
-                x, y = annot.boundary().left()*pixmap.width(), annot.boundary().top()*pixmap.height()
-                w, h = annot.boundary().width()*pixmap.width()+1, annot.boundary().height()*pixmap.height()+1
-                self.link_areas.append(QtCore.QRectF(x,y, w, h))
-                self.link_annots.append(annot)
+        links = doc.pageLinkAnnotations(page_no)
+        for link in links:
+            subtype,rect,data = link
+            x,y,w,h = [x*self.dpi/72 for x in rect]
+            self.link_areas.append(QRectF(x,y, w+1, h+1))
+            self.link_annots.append(link)
         self.annots_listed = True
 
     def clear(self):
@@ -814,7 +766,7 @@ class PageWidget(QLabel):
                 pm = self.pm.copy()
                 painter = QPainter()
                 painter.begin(pm)
-                painter.drawRect(QtCore.QRect(self.click_point, ev.pos()))
+                painter.drawRect(QRectF(self.click_point, ev.pos()))
                 painter.end()
                 self.setPixmap(pm)
             return
@@ -822,17 +774,15 @@ class PageWidget(QLabel):
         # Change cursor if cursor is over link annotation
         for i, area in enumerate(self.link_areas):
             if area.contains(ev.pos()):
-                linkDest = self.link_annots[i].linkDestination()
-                if not linkDest : continue
+                subtype,rect,data = self.link_annots[i]
                 # For jump to page link
-                if linkDest.linkType() == Poppler.Link.Goto:
-                    p = linkDest.destination().pageNumber()
-                    self.manager.showStatus("Jump To Page : %i" % p)
-                    self.setCursor(QtCore.Qt.PointingHandCursor)
+                if subtype == "GoTo":
+                    self.manager.showStatus("Jump To Page : %i" % data[0])
+                    self.setCursor(Qt.PointingHandCursor)
                 # For URL link
-                elif linkDest.linkType() == Poppler.Link.Browse:
-                    self.manager.showStatus("URL : %s" % linkDest.url())
-                    self.setCursor(QtCore.Qt.PointingHandCursor)
+                elif subtype == "URI":
+                    self.manager.showStatus("URL : %s" % data)
+                    self.setCursor(Qt.PointingHandCursor)
                 return
         self.manager.showStatus("")
         self.unsetCursor()
@@ -846,30 +796,26 @@ class PageWidget(QLabel):
             return
         # In normal mode
         for i, area in enumerate(self.link_areas):
-            if not area.contains(ev.pos()): continue
-            link_dest = self.link_annots[i].linkDestination()
-            if not link_dest : continue
-            # For jump to page link
-            if link_dest.linkType() == Poppler.Link.Goto:
-                page_num = link_dest.destination().pageNumber()
-                top = 0.0
-                if link_dest.destination().isChangeTop():
-                    top = link_dest.destination().top()
-                self.manager.jumpTo(page_num, top)
-            # For URL link
-            elif link_dest.linkType() == Poppler.Link.Browse:
-                url = link_dest.url()
-                if url.startswith("http"):
+            if not area.contains(ev.pos()):
+                continue
+            subtype,rect,data = self.link_annots[i]
+            # For jump to page link, data==(page_no,top)
+            if subtype == "GoTo":
+                self.manager.jumpTo(*data)
+            # For URL link, data==url
+            elif subtype == "URI":
+                if data.startswith("http"):
                     confirm = QMessageBox.question(self, "Open Url in Browser",
-                        "Do you want to open browser to open...\n%s" %url, QMessageBox.Yes|QMessageBox.Cancel)
+                        "Do you want to open browser to open...\n%s" %data, QMessageBox.Yes|QMessageBox.Cancel)
                     if confirm == QMessageBox.Yes:
-                        Popen(["x-www-browser", url])
+                        Popen(["x-www-browser", data])
             return
         ev.ignore()
 
     def mouseReleaseEvent(self, ev):
         if self.manager.copy_text_mode:
-            self.manager.copyText(self.page_num, self.click_point, ev.pos())
+            rect = QRectF(self.click_point, ev.pos()).getRect()
+            self.manager.copyText(self.page_num, list(rect))
             self.setPixmap(self.pm)
             self.click_point = None
             self.pm = None
@@ -883,13 +829,13 @@ class PageWidget(QLabel):
             painter = QPainter(img)
             zoom = self.dpi/72.0
             for area in self.highlight_area:
-                box = QtCore.QRectF(area.left()*zoom, area.top()*zoom,
-                                    area.width()*zoom, area.height()*zoom)
-                painter.fillRect(box, QColor(0,255,0, 127))
+                rect = [x*zoom for x in area]
+                painter.fillRect(QRectF(*rect), QColor(0,255,0, 127))
             painter.end()
             self.setPixmap(img)
         else:
             self.setPixmap(self.image)
+
 
 
 
@@ -904,13 +850,13 @@ class Notifier(QSystemTrayIcon):
         # Wait for 200ms, otherwise notification bubble will showup in wrong position.
         wait(200)
         self.showMessage(title, message)
-        QtCore.QTimer.singleShot(4000, self.deleteLater)
+        QTimer.singleShot(4000, self.deleteLater)
 
 
 
 def wait(millisec):
-    loop = QtCore.QEventLoop()
-    QtCore.QTimer.singleShot(millisec, loop.quit)
+    loop = QEventLoop()
+    QTimer.singleShot(millisec, loop.quit)
     loop.exec_()
 
 def collapseUser(path):

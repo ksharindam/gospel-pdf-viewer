@@ -54,7 +54,7 @@ class ExportToImageDialog(QDialog):
 
 
 class DocInfoDialog(QDialog):
-    def __init__(self, parent):
+    def __init__(self, info, parent):
         QDialog.__init__(self, parent)
         self.resize(560, 320)
         self.tableWidget = QTableWidget(0, 2, self)
@@ -69,14 +69,14 @@ class DocInfoDialog(QDialog):
         self.tableWidget.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.tableWidget.horizontalHeader().setVisible(False)
         self.tableWidget.verticalHeader().setVisible(False)
-
-    def setInfo(self, info_keys, values):
-        for i in range(len(info_keys)):
-            if info_keys[i] in ['ModDate', 'CreationDate']:
-                values[i] = parsePdfTime(values[i])
+        # set info
+        for i, item in enumerate(info.items()):
+            key,val = item
+            if key.lower() in ['moddate', 'creationdate']:
+                val = parsePdfTime(val)
             self.tableWidget.insertRow(i)
-            self.tableWidget.setItem(i,0, QTableWidgetItem(info_keys[i]))
-            self.tableWidget.setItem(i,1, QTableWidgetItem(values[i]))
+            self.tableWidget.setItem(i,0, QTableWidgetItem(key))
+            self.tableWidget.setItem(i,1, QTableWidgetItem(val))
 
 # Takes D:20130501200439+01'00' like format and returns a local timezone based format
 # In some pdfs date does not start with D:

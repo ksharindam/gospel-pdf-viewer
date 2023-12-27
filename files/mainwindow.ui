@@ -68,7 +68,6 @@
        <normaloff>:/export.png</normaloff>:/export.png</iconset>
      </property>
      <addaction name="pageToImageAction"/>
-     <addaction name="toPSAction"/>
     </widget>
     <widget class="QMenu" name="menuRecentFiles">
      <property name="title">
