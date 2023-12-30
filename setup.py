@@ -18,7 +18,7 @@ setup(
       'Programming Language :: Python :: 3',
       ],
       entry_points={
-          'console_scripts': ['gospel-pdf=gospel_pdf.main:main'],
+          'console_scripts': ['gospel_pdf=gospel_pdf.main:main'],
       },
       data_files=[
                  ('share/applications', ['files/gospel-pdf.desktop']),
