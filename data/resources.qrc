@@ -1,0 +1,27 @@
+<RCC>
+  <qresource>
+    <file>icons/adobe.png</file>
+    <file>icons/attachment.png</file>
+    <file>icons/cancel.png</file>
+    <file>icons/copy.png</file>
+    <file>icons/document-print.png</file>
+    <file>icons/edit-clear.png</file>
+    <file>icons/export.png</file>
+    <file>icons/go-first.png</file>
+    <file>icons/go-last.png</file>
+    <file>icons/goto.png</file>
+    <file>icons/image.png</file>
+    <file>icons/info.png</file>
+    <file>icons/next.png</file>
+    <file>icons/open.png</file>
+    <file>icons/prev.png</file>
+    <file>icons/quit.png</file>
+    <file>icons/recents.png</file>
+    <file>icons/save.png</file>
+    <file>icons/search.png</file>
+    <file>icons/undo-jump.png</file>
+    <file>icons/unlock.png</file>
+    <file>icons/zoomin.png</file>
+    <file>icons/zoomout.png</file>
+  </qresource>
+</RCC>

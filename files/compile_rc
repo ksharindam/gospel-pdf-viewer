@@ -1,3 +1,0 @@
-#!/bin/bash
-cd ..
-pyrcc5 -o gospel_pdf/resources_rc.py files/resources.qrc

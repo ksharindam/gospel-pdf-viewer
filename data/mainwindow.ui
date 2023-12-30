@@ -14,7 +14,7 @@
    <string>Gospel PDF Viewer</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resources.qrc">
+   <iconset>
     <normaloff>:/adobe.png</normaloff>:/adobe.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -65,7 +65,7 @@
      </property>
      <property name="icon">
       <iconset resource="resources.qrc">
-       <normaloff>:/export.png</normaloff>:/export.png</iconset>
+       <normaloff>:/icons/export.png</normaloff>:/icons/export.png</iconset>
      </property>
      <addaction name="pageToImageAction"/>
     </widget>
@@ -75,7 +75,7 @@
      </property>
      <property name="icon">
       <iconset resource="resources.qrc">
-       <normaloff>:/recents.png</normaloff>:/recents.png</iconset>
+       <normaloff>:/icons/recents.png</normaloff>:/icons/recents.png</iconset>
      </property>
     </widget>
     <addaction name="openFileAction"/>
@@ -186,7 +186,7 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="resources.qrc">
+        <iconset>
          <normaloff>:/cancel.png</normaloff>:/cancel.png</iconset>
        </property>
        <property name="iconSize">
@@ -203,7 +203,7 @@
   <action name="openFileAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/open.png</normaloff>:/open.png</iconset>
+     <normaloff>:/icons/open.png</normaloff>:/icons/open.png</iconset>
    </property>
    <property name="text">
     <string>Open</string>
@@ -215,7 +215,7 @@
   <action name="quitAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/quit.png</normaloff>:/quit.png</iconset>
+     <normaloff>:/icons/quit.png</normaloff>:/icons/quit.png</iconset>
    </property>
    <property name="text">
     <string>Quit</string>
@@ -227,7 +227,7 @@
   <action name="zoominAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/zoomin.png</normaloff>:/zoomin.png</iconset>
+     <normaloff>:/icons/zoomin.png</normaloff>:/icons/zoomin.png</iconset>
    </property>
    <property name="text">
     <string>Zoom In</string>
@@ -239,7 +239,7 @@
   <action name="zoomoutAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/zoomout.png</normaloff>:/zoomout.png</iconset>
+     <normaloff>:/icons/zoomout.png</normaloff>:/icons/zoomout.png</iconset>
    </property>
    <property name="text">
     <string>Zoom Out</string>
@@ -251,7 +251,7 @@
   <action name="prevPageAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/prev.png</normaloff>:/prev.png</iconset>
+     <normaloff>:/icons/prev.png</normaloff>:/icons/prev.png</iconset>
    </property>
    <property name="text">
     <string>Prev Page</string>
@@ -263,7 +263,7 @@
   <action name="nextPageAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/next.png</normaloff>:/next.png</iconset>
+     <normaloff>:/icons/next.png</normaloff>:/icons/next.png</iconset>
    </property>
    <property name="text">
     <string>Next Page</string>
@@ -275,7 +275,7 @@
   <action name="undoJumpAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/undo-jump.png</normaloff>:/undo-jump.png</iconset>
+     <normaloff>:/icons/undo-jump.png</normaloff>:/icons/undo-jump.png</iconset>
    </property>
    <property name="text">
     <string>Jump Back</string>
@@ -294,7 +294,7 @@
   </action>
   <action name="toPSAction">
    <property name="icon">
-    <iconset resource="resources.qrc">
+    <iconset>
      <normaloff>:/adobe.png</normaloff>:/adobe.png</iconset>
    </property>
    <property name="text">
@@ -304,7 +304,7 @@
   <action name="docInfoAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/info.png</normaloff>:/info.png</iconset>
+     <normaloff>:/icons/info.png</normaloff>:/icons/info.png</iconset>
    </property>
    <property name="text">
     <string>Document Info</string>
@@ -318,7 +318,7 @@
   <action name="pageToImageAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/image.png</normaloff>:/image.png</iconset>
+     <normaloff>:/icons/image.png</normaloff>:/icons/image.png</iconset>
    </property>
    <property name="text">
     <string>Page to Image</string>
@@ -327,7 +327,7 @@
   <action name="printAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/document-print.png</normaloff>:/document-print.png</iconset>
+     <normaloff>:/icons/document-print.png</normaloff>:/icons/document-print.png</iconset>
    </property>
    <property name="text">
     <string>Print</string>
@@ -342,7 +342,7 @@
   <action name="firstPageAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/go-first.png</normaloff>:/go-first.png</iconset>
+     <normaloff>:/icons/go-first.png</normaloff>:/icons/go-first.png</iconset>
    </property>
    <property name="text">
     <string>First Page</string>
@@ -351,7 +351,7 @@
   <action name="lastPageAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/go-last.png</normaloff>:/go-last.png</iconset>
+     <normaloff>:/icons/go-last.png</normaloff>:/icons/go-last.png</iconset>
    </property>
    <property name="text">
     <string>Last Page</string>
@@ -360,7 +360,7 @@
   <action name="lockUnlockAction">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/unlock.png</normaloff>:/unlock.png</iconset>
+     <normaloff>:/icons/unlock.png</normaloff>:/icons/unlock.png</iconset>
    </property>
    <property name="text">
     <string>Encrypt PDF</string>

@@ -100,12 +100,12 @@ class Window(QMainWindow, Ui_window):
         self.resize_page_timer.setSingleShot(True)
         self.resize_page_timer.timeout.connect(self.onWindowResize)
         # Add shortcut actions
-        self.gotoPageAction = QAction(QIcon(":/goto.png"), "GoTo Page", self)
+        self.gotoPageAction = QAction(QIcon(":/icons/goto.png"), "GoTo Page", self)
         self.gotoPageAction.triggered.connect(self.gotoPage)
-        self.copyTextAction = QAction(QIcon(":/copy.png"), "Copy Text", self)
+        self.copyTextAction = QAction(QIcon(":/icons/copy.png"), "Copy Text", self)
         self.copyTextAction.setCheckable(True)
         self.copyTextAction.triggered.connect(self.toggleCopyText)
-        self.findTextAction = QAction(QIcon(":/search.png"), "Find Text", self)
+        self.findTextAction = QAction(QIcon(":/icons/search.png"), "Find Text", self)
         self.findTextAction.setShortcut('Ctrl+F')
         self.findTextAction.triggered.connect(self.dockSearch.show)
         # connect menu actions signals
@@ -160,7 +160,7 @@ class Window(QMainWindow, Ui_window):
         self.toolBar.addAction(self.findTextAction)
         #self.toolBar.addAction(self.saveUnlockedAction)
         self.toolBar.addWidget(spacer)
-        self.attachAction = self.toolBar.addAction(QIcon(":/attachment.png"), "A")
+        self.attachAction = self.toolBar.addAction(QIcon(":/icons/attachment.png"), "A")
         self.attachAction.setVisible(False)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.quitAction)
@@ -229,7 +229,7 @@ class Window(QMainWindow, Ui_window):
             action = self.menuRecentFiles.addAction(name, self.openRecentFile)
             self.recent_files_actions.append(action)
         self.menuRecentFiles.addSeparator()
-        self.menuRecentFiles.addAction(QIcon(':/edit-clear.png'), 'Clear Recents', self.clearRecents)
+        self.menuRecentFiles.addAction(QIcon(':/icons/edit-clear.png'), 'Clear Recents', self.clearRecents)
 
     def openRecentFile(self):
         action = self.sender()
@@ -841,7 +841,7 @@ class PageWidget(QLabel):
 
 class Notifier(QSystemTrayIcon):
     def __init__(self, parent):
-        QSystemTrayIcon.__init__(self, QIcon(':/adobe.png'), parent)
+        QSystemTrayIcon.__init__(self, QIcon(':/icons/adobe.png'), parent)
         self.messageClicked.connect(self.deleteLater)
         self.activated.connect(self.deleteLater)
 

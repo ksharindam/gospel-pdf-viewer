@@ -4,9 +4,9 @@ Name = Gospel PDF Viewer
 Executable Command = gospel-pdf
 Package Name = gospel-pdf
 Python Module Name = gospel_pdf
-Debian Dependency = python3-pyqt5, python3-poppler-qt5
+Debian Dependency = python3-pyqt5, python3-poppler-qt5 or pymupdf
 
-Description = A poppler based PDF viewer written in PyQt
+Description = A poppler or pymupdf based PDF viewer written in PyQt
 
 ...........................................................................
 |   Copyright (C) 2017-2023 Arindam Chaudhuri <ksharindam@gmail.com>       |
@@ -25,11 +25,5 @@ Description = A poppler based PDF viewer written in PyQt
 |   along with this program.  If not, see <http://www.gnu.org/licenses/>.  |
 ...........................................................................
 """
-# TODO:
-#       Show fonts list
-#       resize pages when dock is hidden
-# FIXME :
-#       Search is not cancelled immediately, when cancel is pressed
-#
 
 __version__ = '3.0'

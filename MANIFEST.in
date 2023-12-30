@@ -1,2 +1,2 @@
-include files/gospel-pdf.desktop
-include files/gospel-pdf.png
+include data/gospel-pdf.desktop
+include data/gospel-pdf.png

@@ -1,5 +1,5 @@
-# gospel-pdf-viewer
-Poppler based pdf viewer for Linux written in PyQt
+# Gospel Pdf Viewer
+Poppler or MuPDF based pdf viewer for Linux written in PyQt
 
 **Dependency :**  
 * python3-pyqt5  
