@@ -26,4 +26,4 @@ Description = A poppler or pymupdf based PDF viewer written in PyQt
 ...........................................................................
 """
 
-__version__ = '3.0'
+__version__ = '3.1.3'

@@ -134,7 +134,7 @@ class Window(QMainWindow, Ui_window):
         spacer = QWidget(self)
         spacer.setSizePolicy(1|2|4,1|4)
         self.zoomLevelCombo = QComboBox(self)
-        self.zoomLevelCombo.addItems(["Fixed Width", "75%", "90%","100%","110%","121%","133%","146%", "175%", "200%"])
+        self.zoomLevelCombo.addItems(["Fit Width", "75%", "90%","100%","110%","121%","133%","146%", "175%", "200%"])
         self.zoomLevelCombo.activated.connect(self.setZoom)
         self.zoom_levels = [0, 75, 90, 100, 110 , 121, 133, 146, 175, 200]
         # Add toolbar actions
@@ -480,7 +480,7 @@ class Window(QMainWindow, Ui_window):
         fixed_width = self.availableWidth()
         for i in range(self.pages_count):
             pg_width, pg_height = self.doc.pageSize(i+1) # width in points
-            if self.zoomLevelCombo.currentIndex() == 0: # if fixed width
+            if self.zoomLevelCombo.currentIndex() == 0: # if Fit Width
                 dpi = int(72.0*fixed_width/pg_width)
             else:
                 dpi = int(page_dpi)
