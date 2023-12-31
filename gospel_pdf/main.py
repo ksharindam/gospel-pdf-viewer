@@ -5,7 +5,7 @@ import sys, os
 from subprocess import Popen
 from shutil import which
 from PyQt5.QtCore import ( Qt, qVersion, QObject, pyqtSignal, QRectF, QPoint, QSettings,
-    QTimer, QThread, QEventLoop )
+    QTimer, QThread, QEventLoop, QDir )
 from PyQt5.QtGui import ( QPainter, QColor, QPixmap, QImage, QIcon, QStandardItem,
     QIntValidator, QStandardItemModel
 )
@@ -208,6 +208,7 @@ class Window(QMainWindow, Ui_window):
         self.renderer2.rendered.connect(self.setRenderedImage)
         self.thread2.start()
         # Initialize Variables
+        QDir.setCurrent(QDir.homePath())
         self.doc = None
         self.filename = ''
         self.passwd = ''
