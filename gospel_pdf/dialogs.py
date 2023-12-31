@@ -56,6 +56,7 @@ class ExportToImageDialog(QDialog):
 class DocInfoDialog(QDialog):
     def __init__(self, info, parent):
         QDialog.__init__(self, parent)
+        self.setWindowTitle('Document Info')
         self.resize(560, 320)
         self.tableWidget = QTableWidget(0, 2, self)
         vLayout = QVBoxLayout(self)
