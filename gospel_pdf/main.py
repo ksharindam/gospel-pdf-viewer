@@ -485,7 +485,7 @@ class Window(QMainWindow, Ui_window):
             else:
                 dpi = int(page_dpi)
             self.pages[i].dpi = dpi
-            self.pages[i].setFixedSize(pg_width*dpi/72.0, pg_height*dpi/72.0)
+            self.pages[i].setFixedSize(int(pg_width*dpi/72), int(pg_height*dpi/72))
         for page_no in self.rendered_pages:
             self.pages[page_no-1].clear()
         self.rendered_pages = []
