@@ -347,6 +347,9 @@
    <property name="text">
     <string>First Page</string>
    </property>
+   <property name="shortcut">
+    <string>Home</string>
+   </property>
   </action>
   <action name="lastPageAction">
    <property name="icon">
@@ -355,6 +358,9 @@
    </property>
    <property name="text">
     <string>Last Page</string>
+   </property>
+   <property name="shortcut">
+    <string>End</string>
    </property>
   </action>
   <action name="lockUnlockAction">
