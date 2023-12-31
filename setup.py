@@ -18,11 +18,11 @@ setup(
       'Programming Language :: Python :: 3',
       ],
       entry_points={
-          'console_scripts': ['gospel_pdf=gospel_pdf.main:main'],
+          'gui_scripts': ['gospel-pdf=gospel_pdf.main:main'],
       },
       data_files=[
-                 ('share/applications', ['files/gospel-pdf.desktop']),
-                 ('share/icons', ['files/gospel-pdf.png'])
+                 ('share/applications', ['data/gospel-pdf.desktop']),
+                 ('share/icons', ['data/gospel-pdf.png'])
       ],
       include_package_data=True,
       zip_safe=False
