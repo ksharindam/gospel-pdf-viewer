@@ -1,15 +1,15 @@
 
 from setuptools import setup
-from gospel_pdf import __version__
+from gospel_pdf import __version__, AUTHOR_NAME, AUTHOR_EMAIL
 
 setup(
       name='gospel-pdf',
       version=__version__,
-      description='Poppler based fast PDF Viewer written in PyQt5',
+      description='Poppler or pymupdf based fast PDF Viewer',
       keywords='pyqt pyqt5 pdf-viewer poppler poppler-qt5',
       url='http://github.com/ksharindam/gospel-pdf-viewer',
-      author='Arindam Chaudhuri',
-      author_email='ksharindam@gmail.com',
+      author=AUTHOR_NAME,
+      author_email=AUTHOR_EMAIL,
       license='GNU GPLv3',
       packages=['gospel_pdf'],
       classifiers=[

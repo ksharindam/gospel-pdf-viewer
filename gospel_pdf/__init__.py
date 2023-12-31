@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Name = Gospel PDF Viewer
-Executable Command = gospel-pdf
 Package Name = gospel-pdf
-Python Module Name = gospel_pdf
 Debian Dependency = python3-pyqt5, python3-poppler-qt5 or pymupdf
 
 Description = A poppler or pymupdf based PDF viewer written in PyQt
@@ -26,4 +24,8 @@ Description = A poppler or pymupdf based PDF viewer written in PyQt
 ...........................................................................
 """
 
-__version__ = '3.1.4'
+__version__ = '3.1.5'
+
+AUTHOR_NAME = "Arindam Chaudhuri"
+AUTHOR_EMAIL = "ksharindam@gmail.com"
+COPYRIGHT_YEAR = "2017-2023"

@@ -2,33 +2,38 @@
 from PyQt5.QtCore import QRectF
 from PyQt5.QtGui import QImage
 
-pdf_lib = "fitz"
 
-if pdf_lib=="poppler":
-    try:
-        from popplerqt5 import Poppler
-    except ImportError:
-        import fitz
-        pdf_lib = 'fitz'
+def import_fitz():
+    global fitz, backend_version
+    import fitz
+    backend_version = fitz.version[0]
 
-elif pdf_lib=="fitz":
+def import_poppler():
+    global Poppler, backend_version
+    from popplerqt5 import Poppler, poppler_version
+    backend_version = "%i.%i.%i" % poppler_version()
+
+#backends = [("fitz", import_fitz), ("poppler", import_poppler), ]
+backends = [("poppler", import_poppler), ("fitz", import_fitz), ]
+
+for backend, import_func in backends:
     try:
-        import fitz
-    except ImportError:
-        from popplerqt5 import Poppler
-        pdf_lib = 'poppler'
+        import_func()
+        break
+    except : pass
+
 
 
 class PdfDocument:
     """ Wrapper class of pdf backend library """
     def __init__(self, filename):
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             self.doc = Poppler.Document.load(filename)
             if self.doc:
                 self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
                          Poppler.Document.Antialiasing | Poppler.Document.ThinLineSolid )
 
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             try:
                 self.doc = fitz.open(filename, filetype="pdf")
             except:
@@ -39,39 +44,39 @@ class PdfDocument:
 
     def isLocked(self):
         """ returns False after document is unlocked """
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             return self.doc.isLocked()
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             return self.doc.is_encrypted
 
     def unlock(self, password):
         """ Unlock a password protected PDF. returns True on success """
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             locked = self.doc.unlock(password.encode(), password.encode())
             self.doc.setRenderHint(Poppler.Document.TextAntialiasing | Poppler.Document.TextHinting |
                          Poppler.Document.Antialiasing | Poppler.Document.ThinLineSolid )
             return not locked
 
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             return self.doc.authenticate(password)# returns 1,2,4 or 6 if successful
 
     def pageCount(self):
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             return self.doc.numPages()
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             return len(self.doc)# or self.doc.page_count
 
     def hasEmbeddedFiles(self):
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             return self.doc.hasEmbeddedFiles()
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             return self.doc.embfile_count()
 
     def info(self):
         """ returns document info as dict """
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             return {key:self.doc.info(key) for key in self.doc.infoKeys()}
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             metadata = self.doc.metadata or {}
             return {key:val for key,val in metadata.items() if val}
 
@@ -79,7 +84,7 @@ class PdfDocument:
         """ returns list of lists. each entry is in [level, title, page_no, top]
          format. level starts from 1. top has value in point """
         result = []
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             toc = self.doc.toc()
             if not toc:
                 return []
@@ -116,7 +121,7 @@ class PdfDocument:
                 if not childNode.isNull():
                     stack.append((childNode,level+1))
 
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             toc = self.doc.get_toc(simple=False)
             for lvl,title,page_no,dest in toc:
                 top = dest["to"].y if dest["kind"]==fitz.LINK_GOTO else 0.0
@@ -127,21 +132,21 @@ class PdfDocument:
 
     def pageSize(self, page_no):
         """ returns page (width,height) in points """
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             page_size = self.doc.page(page_no-1).pageSizeF()
             return page_size.width(), page_size.height()
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             rect  = self.doc[page_no-1].rect
             return rect.width, rect.height
 
     def renderPage(self, page_no, dpi):
         """ @int page_no, @int dpi (mupdf only accepts int as dpi val)"""
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             page = self.doc.page(page_no-1)
             if page:
                 return page.renderToImage(dpi, dpi)
 
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             pix = self.doc.get_page_pixmap(page_no-1, dpi=int(dpi))
             return QImage(pix.samples, pix.w, pix.h, pix.stride, QImage.Format_RGB888)
 
@@ -151,7 +156,7 @@ class PdfDocument:
         If type is 'GoTo', target is (page_no,top) tuple.
         If type is URI, target is url str """
         result = []
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             page = self.doc.page(page_no-1)
             page_w, page_h = page.pageSizeF().width(), page.pageSizeF().height()
             if not page:
@@ -173,7 +178,7 @@ class PdfDocument:
                         url = dest.url()
                         result.append(["URI", (x,y,w,h), url])
 
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             page = self.doc.load_page(page_no-1)
             page_rect = page.rect
             if not page:
@@ -196,10 +201,10 @@ class PdfDocument:
 
     def getPageText(self, page_no, rect):
         """ rect must be in [x,y,w,h] format with vals in points. returns text str """
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             return self.doc.page(page_no-1).text(QRectF(*rect))
 
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             #see https://github.com/pymupdf/PyMuPDF-Utilities/tree/master/textbox-extraction
             page = self.doc.load_page(page_no-1)
             x,y,w,h = rect
@@ -207,11 +212,11 @@ class PdfDocument:
 
     def findText(self, page_no, text):
         """ returns a list of rects """
-        if pdf_lib=="poppler":
+        if backend=="poppler":
             page = self.doc.page(page_no-1)
             rects = page.search(text,Poppler.Page.CaseInsensitive,0)
             return [list(rect.getRect()) for rect in rects]
-        elif pdf_lib=="fitz":
+        elif backend=="fitz":
             rects = self.doc.search_page_for(page_no-1, text)
             return [[rect.x0,rect.y0,rect.width,rect.height] for rect in rects ]
 

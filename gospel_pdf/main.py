@@ -4,7 +4,7 @@
 import sys, os
 from subprocess import Popen
 from shutil import which
-from PyQt5.QtCore import ( Qt, QObject, pyqtSignal, QRectF, QPoint, QSettings,
+from PyQt5.QtCore import ( Qt, qVersion, QObject, pyqtSignal, QRectF, QPoint, QSettings,
     QTimer, QThread, QEventLoop )
 from PyQt5.QtGui import ( QPainter, QColor, QPixmap, QImage, QIcon, QStandardItem,
     QIntValidator, QStandardItemModel
@@ -19,10 +19,10 @@ from PyQt5.QtWidgets import (
 sys.path.append(os.path.dirname(__file__)) # for enabling python 2 like import
 
 import resources_rc
-from __init__ import __version__
+from __init__ import __version__, COPYRIGHT_YEAR, AUTHOR_NAME, AUTHOR_EMAIL
 from ui_mainwindow import Ui_window
 from dialogs import ExportToImageDialog, DocInfoDialog
-from pdf_lib import PdfDocument
+from pdf_lib import PdfDocument, backend, backend_version
 
 DEBUG = False
 def debug(*args):
@@ -122,6 +122,7 @@ class Window(QMainWindow, Ui_window):
         self.nextPageAction.triggered.connect(self.goNextPage)
         self.firstPageAction.triggered.connect(self.goFirstPage)
         self.lastPageAction.triggered.connect(self.goLastPage)
+        self.aboutAction.triggered.connect(self.showAbout)
         # Create widgets for menubar / toolbar
         self.gotoPageEdit = QLineEdit(self)
         self.gotoPageEdit.setPlaceholderText("Jump to page...")
@@ -659,6 +660,15 @@ class Window(QMainWindow, Ui_window):
             if filename in self.recent_files:
                 self.recent_files.remove(filename)
             self.recent_files.insert(0, filename)
+
+    def showAbout(self):
+        lines = ("<h1>Gospel Pdf Viewer</h1>",
+            "A Fast Simple Pdf Viewer using PyMupdf or Poppler<br><br>",
+            "Version : %s<br>" % __version__,
+            "Qt : %s<br>" % qVersion(),
+            "%s : %s<br>" % (backend, backend_version),
+            "Copyright &copy; %s %s &lt;%s&gt;" % (COPYRIGHT_YEAR, AUTHOR_NAME, AUTHOR_EMAIL))
+        QMessageBox.about(self, "About Gospel Pdf Viewer", "".join(lines))
 
     def closeEvent(self, ev):
         """ Save all settings on window close """
