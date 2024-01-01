@@ -71,6 +71,10 @@ cd /usr/${LIBDIR}/qt5/plugins/
 mkdir -p ${QT_PLUGIN_PATH}/platforms
 cp platforms/libqxcb.so ${QT_PLUGIN_PATH}/platforms
 
+# jpeg plugin for saving images
+mkdir -p ${QT_PLUGIN_PATH}/imageformats
+cp imageformats/libqjpeg.so ${QT_PLUGIN_PATH}/imageformats
+
 # using Fusion theme does not require bundling any style plugin
 
 
@@ -92,7 +96,7 @@ chmod -R 0755 AppDir
 
 
 if [ "$MULTIARCH" = "x86_64-linux-gnu" ]; then
-    appimagetool -u "zsync|https://github.com/ksharindam/chemcanvas/releases/latest/download/ChemCanvas-x86_64.AppImage.zsync" AppDir
+    appimagetool -u "zsync|https://github.com/ksharindam/gospel-pdf-viewer/releases/latest/download/Gospel_PDF-x86_64.AppImage.zsync" AppDir
 else
     appimagetool AppDir
 fi

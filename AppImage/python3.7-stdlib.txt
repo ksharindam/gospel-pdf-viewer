@@ -14,6 +14,7 @@ functools.py
 genericpath.py
 hashlib.py
 heapq.py
+importlib
 io.py
 keyword.py
 linecache.py
