@@ -193,8 +193,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset>
-         <normaloff>:/cancel.png</normaloff>:/cancel.png</iconset>
+        <iconset resource="resources.qrc">
+         <normaloff>:/icons/cancel.png</normaloff>:/icons/cancel.png</iconset>
        </property>
        <property name="iconSize">
         <size>

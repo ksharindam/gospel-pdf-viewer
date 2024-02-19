@@ -178,8 +178,6 @@ class Window(QMainWindow, Ui_window):
         self.recent_files = self.settings.value("RecentFiles", []) or []
         self.history_filenames = self.settings.value("HistoryFileNameList", []) or []
         self.history_page_no = self.settings.value("HistoryPageNoList", []) or []
-        self.offset_x = int(self.settings.value("OffsetX", 4))
-        self.offset_y = int(self.settings.value("OffsetY", 26))
         self.available_area = [desktop.availableGeometry().width(), desktop.availableGeometry().height()]
         self.zoomLevelCombo.setCurrentIndex(int(self.settings.value("ZoomLevel", 2)))
         # Connect Signals
@@ -674,8 +672,6 @@ class Window(QMainWindow, Ui_window):
     def closeEvent(self, ev):
         """ Save all settings on window close """
         self.saveFileData()
-        self.settings.setValue("OffsetX", self.geometry().x()-self.x())
-        self.settings.setValue("OffsetY", self.geometry().y()-self.y())
         self.settings.setValue("ZoomLevel", self.zoomLevelCombo.currentIndex())
         self.settings.setValue("HistoryFileNameList", self.history_filenames[:100])
         self.settings.setValue("HistoryPageNoList", self.history_page_no[:100])
