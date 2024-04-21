@@ -5,9 +5,9 @@ import sys, os
 from subprocess import Popen
 from shutil import which
 from PyQt5.QtCore import ( Qt, qVersion, QObject, pyqtSignal, QRectF, QPoint, QSettings,
-    QTimer, QThread, QEventLoop, QDir )
+    QTimer, QThread, QEventLoop, QDir, QUrl )
 from PyQt5.QtGui import ( QPainter, QColor, QPixmap, QImage, QIcon, QStandardItem,
-    QIntValidator, QStandardItemModel
+    QIntValidator, QStandardItemModel, QDesktopServices
 )
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout, QLabel,
@@ -815,7 +815,7 @@ class PageWidget(QLabel):
                     confirm = QMessageBox.question(self, "Open Url in Browser",
                         "Do you want to open browser to open...\n%s" %data, QMessageBox.Yes|QMessageBox.Cancel)
                     if confirm == QMessageBox.Yes:
-                        Popen(["x-www-browser", data])
+                        QDesktopServices.openUrl(QUrl(data))
             return
         ev.ignore()
 
