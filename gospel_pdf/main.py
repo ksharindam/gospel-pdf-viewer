@@ -63,7 +63,7 @@ class Renderer(QObject):
         annots = self.doc.pageLinkAnnotations(page_no)
         for subtype,rect,data in annots:
             x,y,w,h = [x*dpi/72 for x in rect]
-            self.painter.fillRect(x, y, w+1, h+1, self.link_color)
+            self.painter.fillRect(QRectF(x, y, w+1, h+1), self.link_color)
         self.painter.end()
         self.rendered.emit(page_no, img)
 
@@ -348,7 +348,7 @@ class Window(QMainWindow, Ui_window):
     def onMouseScroll(self, pos):
         """ It is called when vertical scrollbar value is changed.
             Get the current page number on scrolling, then requests to render"""
-        index = self.verticalLayout.indexOf(self.frame.childAt(self.frame.width()/2, pos))
+        index = self.verticalLayout.indexOf(self.frame.childAt(int(self.frame.width()/2), int(pos)))
         if index == -1: return
         self.pageNoLabel.setText('<b>%i/%i</b>' % (index+1, self.pages_count) )
         if self.scrollArea.verticalScrollBar().isSliderDown() or self.scroll_render_lock : return
@@ -405,6 +405,7 @@ class Window(QMainWindow, Ui_window):
             return
         Popen(["quikprint", self.filename])
 
+
     def exportPageToImage(self):
         dialog = ExportToImageDialog(self.curr_page_no, self.pages_count, self)
         if dialog.exec_() == QDialog.Accepted:
@@ -440,7 +441,7 @@ class Window(QMainWindow, Ui_window):
         self.curr_page_no = page_num
         scrollbar_pos = self.pages[page_num-1].pos().y()
         scrollbar_pos += top
-        self.scrollArea.verticalScrollBar().setValue(scrollbar_pos)
+        self.scrollArea.verticalScrollBar().setValue(int(scrollbar_pos))
 
     def undoJump(self):
         if self.jumped_from == None: return
