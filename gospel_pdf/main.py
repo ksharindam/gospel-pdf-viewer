@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QComboBox, QMessageBox,
     QDialog, QSystemTrayIcon
 )
+from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 
 sys.path.append(os.path.dirname(__file__)) # for enabling python 2 like import
 
@@ -400,10 +401,65 @@ class Window(QMainWindow, Ui_window):
             QMessageBox.warning(self, "Failed !", "Failed to save as Encrypted")
 
     def printFile(self):
-        if which("quikprint")==None :
-            QMessageBox.warning(self, "QuikPrint Required","Install QuikPrint program.")
+        if which("quikprint"):
+            Popen(["quikprint", self.filename])
             return
-        Popen(["quikprint", self.filename])
+        printer = QPrinter(QPrinter.HighResolution)
+        dlg = QPrintDialog(printer, self)
+        #dlg.setOption(dlg.PrintCurrentPage, True)
+        dlg.setMinMax(1, self.doc.pageCount())
+        if (dlg.exec() != QDialog.Accepted):
+            return
+        from_page = printer.fromPage() or 1
+        to_page = printer.toPage() or self.doc.pageCount()
+        # get cups options
+        o = {}
+        props = printer.printEngine().property(0xfe00)# cups property
+        if props and isinstance(props, list) and len(props) % 2 == 0:
+            for key, value in zip(props[0::2], props[1::2]):
+                if value and isinstance(key, str) and isinstance(value, str):
+                    o[key] = value
+        #print(o)
+        page_set = o.get("page-set", "all")
+        page_ranges = o.get("page-ranges", "")
+        page_nos = []
+        if page_ranges:
+            ranges = page_ranges.split(",")
+            for page_range in ranges:
+                if "-" in page_range:
+                    start, end = page_range.split("-")
+                    page_nos += list(range(int(start), int(end)+1))
+                else:
+                    page_nos.append(int(page_range))
+        else:
+            page_nos = list(range(from_page, to_page+1))
+            # CUPS shows opposite page-set value, if From page is even number
+            if from_page%2==0:
+                page_set = {"odd": "even", "even":"odd"}.get(page_set, "all")
+
+        # filter odd/even
+        if page_set=="odd":
+            page_nos = list(filter(lambda n: n%2, page_nos))
+        elif page_set=="even":
+            page_nos = list(filter(lambda n: n%2-1, page_nos))
+
+        page_nos = set(page_nos)# set allows quick searching
+
+        painter = QPainter(printer)
+        for page_no in range(from_page, to_page+1):
+            if page_no!=from_page:
+                printer.newPage()
+                # needed when any transformation was applied on previous page
+                painter.resetTransform()
+            if page_no not in page_nos:
+                continue
+            rect = painter.viewport()
+            # tried Poppler.Page.renderToPainter() but always fails
+            img = self.doc.renderPage(page_no, 300)
+            scale = min(rect.width()/img.width(), rect.height()/img.height())
+            painter.scale(scale, scale)
+            painter.drawImage(0,0, img)
+        painter.end()
 
 
     def exportPageToImage(self):
