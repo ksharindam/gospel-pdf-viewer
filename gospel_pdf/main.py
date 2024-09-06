@@ -10,10 +10,11 @@ from PyQt5.QtGui import ( QPainter, QColor, QPixmap, QImage, QIcon, QStandardIte
     QIntValidator, QStandardItemModel, QDesktopServices
 )
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QFrame, QVBoxLayout, QLabel,
-    QFileDialog, QInputDialog, QAction, QLineEdit,
-    QComboBox, QMessageBox,
-    QDialog, QSystemTrayIcon
+    QApplication, QMainWindow, QWidget, QFrame, QAction,
+    QVBoxLayout, QGridLayout,
+    QLabel, QMessageBox, QSystemTrayIcon,
+    QLineEdit, QComboBox, QRadioButton,
+    QDialog, QFileDialog, QInputDialog,
 )
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 
@@ -406,12 +407,37 @@ class Window(QMainWindow, Ui_window):
             return
         printer = QPrinter(QPrinter.HighResolution)
         dlg = QPrintDialog(printer, self)
-        #dlg.setOption(dlg.PrintCurrentPage, True)
+        dlg.setOption(dlg.PrintCurrentPage, True)
         dlg.setMinMax(1, self.doc.pageCount())
+        # add a tab for Scaling options
+        widget = QWidget(dlg)
+        widget.setWindowTitle("Scaling")
+        layout = QGridLayout(widget)
+        fitToPageBtn = QRadioButton("Fit To Page", widget)
+        fitToPageBtn.setChecked(True)
+        originalSizeBtn = QRadioButton("Original Size", widget)
+        customScalingBtn = QRadioButton("Custom Scaling (%)", widget)
+        scalingEdit = QLineEdit(widget)
+        scalingEdit.setPlaceholderText("20%-400%")
+        scalingEdit.setValidator(QIntValidator(20, 400, scalingEdit))
+        scalingEdit.setEnabled(False)
+        customScalingBtn.toggled.connect(scalingEdit.setEnabled)
+        layout.addWidget(fitToPageBtn, 0,0,1,2)
+        layout.addWidget(originalSizeBtn, 1,0,1,2)
+        layout.addWidget(customScalingBtn, 2,0,1,1)
+        layout.addWidget(scalingEdit, 2,1,1,1)
+        layout.setColumnStretch(2,1)
+        layout.setRowStretch(3,1)
+        dlg.setOptionTabs([widget])
+
         if (dlg.exec() != QDialog.Accepted):
             return
-        from_page = printer.fromPage() or 1
-        to_page = printer.toPage() or self.doc.pageCount()
+        if printer.printRange()==QPrinter.CurrentPage:
+            from_page = self.curr_page_no
+            to_page = from_page
+        else:
+            from_page = printer.fromPage() or 1
+            to_page = printer.toPage() or self.doc.pageCount()
         # get cups options
         o = {}
         props = printer.printEngine().property(0xfe00)# cups property
@@ -453,12 +479,23 @@ class Window(QMainWindow, Ui_window):
                 painter.resetTransform()
             if page_no not in page_nos:
                 continue
-            rect = painter.viewport()
             # tried Poppler.Page.renderToPainter() but always fails
-            img = self.doc.renderPage(page_no, 300)
-            scale = min(rect.width()/img.width(), rect.height()/img.height())
+            render_dpi = 300
+            img = self.doc.renderPage(page_no, render_dpi)
+            x, y = 0, 0
+            if customScalingBtn.isChecked() and len(scalingEdit.text())>1:
+                scaling = int(scalingEdit.text())/100
+                scale = scaling * printer.physicalDpiX()/render_dpi
+            elif originalSizeBtn.isChecked():
+                # tried printer.setFullPage(True), but this does not change viewport origin
+                scale = printer.physicalDpiX()/render_dpi
+                x, y, w, h = printer.pageRect().getRect()
+                x, y = -x/scale, -y/scale
+            else:
+                rect = painter.viewport()
+                scale = min(rect.width()/img.width(), rect.height()/img.height())
             painter.scale(scale, scale)
-            painter.drawImage(0,0, img)
+            painter.drawImage(x, y, img)
         painter.end()
 
 

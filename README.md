@@ -22,7 +22,6 @@ For Linux download .AppImage package, mark it executable, and double click to ru
 * python3-pyqt5  
 * pyqt5-dev-tools  
 * python3-poppler-qt5 or pymupdf  
-* quikprint (for print support, optional)  
 * qpdf (to unlock pdf, optional)  
 
 To Install this program open terminal inside gospel-pdf-viewer directory.  
