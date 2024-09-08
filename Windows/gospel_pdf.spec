@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+# usage : pyinstaller gospel_pdf.spec
 
 a = Analysis(
     ['../gospel_pdf.py'],

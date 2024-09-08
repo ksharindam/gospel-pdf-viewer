@@ -471,6 +471,17 @@ class Window(QMainWindow, Ui_window):
 
         page_nos = set(page_nos)# set allows quick searching
 
+        render_dpi = 300
+
+        if originalSizeBtn.isChecked():
+            printer.setFullPage(True)
+            scale = printer.physicalDpiX()/render_dpi
+        elif customScalingBtn.isChecked() and len(scalingEdit.text())>1:
+            scaling = int(scalingEdit.text())/100
+            scale = scaling * printer.physicalDpiX()/render_dpi
+        else: # fit to page (need to calculate for each page)
+            scale = 0
+
         painter = QPainter(printer)
         for page_no in range(from_page, to_page+1):
             if page_no!=from_page:
@@ -480,22 +491,11 @@ class Window(QMainWindow, Ui_window):
             if page_no not in page_nos:
                 continue
             # tried Poppler.Page.renderToPainter() but always fails
-            render_dpi = 300
             img = self.doc.renderPage(page_no, render_dpi)
-            x, y = 0, 0
-            if customScalingBtn.isChecked() and len(scalingEdit.text())>1:
-                scaling = int(scalingEdit.text())/100
-                scale = scaling * printer.physicalDpiX()/render_dpi
-            elif originalSizeBtn.isChecked():
-                # tried printer.setFullPage(True), but this does not change viewport origin
-                scale = printer.physicalDpiX()/render_dpi
-                x, y, w, h = printer.pageRect().getRect()
-                x, y = -x/scale, -y/scale
-            else:
-                rect = painter.viewport()
-                scale = min(rect.width()/img.width(), rect.height()/img.height())
-            painter.scale(scale, scale)
-            painter.drawImage(x, y, img)
+            rect = painter.viewport()
+            scale_ = scale or min(rect.width()/img.width(), rect.height()/img.height())
+            painter.scale(scale_, scale_)
+            painter.drawImage(0, 0, img)
         painter.end()
 
 

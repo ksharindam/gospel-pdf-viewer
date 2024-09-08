@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PROG_NAME "Gospel Pdf Viewer"
-!define PROG_VERSION "3.1.5"
+!define PROG_VERSION "3.2.0"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "gospel-pdf.ico"
 !define PROG_EXEC "GospelPdf.exe"
@@ -68,7 +68,7 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Arindam Chaudhuri <arind
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite try
-  File /r /x "bin" /x "plugins" /x "translations" "${BUILDDIR}\_internal"
+  File /r /x "Qt5" "${BUILDDIR}\_internal"
   ; Install Qt5 libraries
   SetOutPath "$INSTDIR\_internal\PyQt5\Qt5\bin"
   File "${QTBIN_DIR}\MSVCP140.dll"
@@ -78,6 +78,7 @@ Section "MainSection" SEC01
   File "${QTBIN_DIR}\Qt5Core.dll"
   File "${QTBIN_DIR}\Qt5Gui.dll"
   File "${QTBIN_DIR}\Qt5Widgets.dll"
+  File "${QTBIN_DIR}\Qt5PrintSupport.dll"
   ; Install Qt5 plugins
   SetOutPath "$INSTDIR\_internal\PyQt5\Qt5\plugins\platforms"
   File "${QTPLUGINS_DIR}\platforms\qwindows.dll"
@@ -85,6 +86,8 @@ Section "MainSection" SEC01
   File "${QTPLUGINS_DIR}\styles\qwindowsvistastyle.dll"
   SetOutPath "$INSTDIR\_internal\PyQt5\Qt5\plugins\imageformats"
   File "${QTPLUGINS_DIR}\imageformats\qjpeg.dll"
+  SetOutPath "$INSTDIR\_internal\PyQt5\Qt5\plugins\printsupport"
+  File "${QTPLUGINS_DIR}\printsupport\windowsprintersupport.dll"
   ; Install program and icon
   SetOutPath "$INSTDIR"
   File "${BUILDDIR}\${PROG_EXEC}"

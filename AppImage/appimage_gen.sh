@@ -58,7 +58,7 @@ cp sipconfig*.py sip.cpython*.so sip.pyi ${APPDIR}/usr/lib/python3
 
 # copy PyQt5 module
 cd PyQt5
-cp Qt.* QtCore.* QtGui.* QtWidgets.* QtXml.* __init__.py \
+cp Qt.* QtCore.* QtGui.* QtWidgets.* QtXml.* QtPrintSupport.* __init__.py \
    ${APPDIR}/usr/lib/python3/PyQt5
 
 cd $APPDIR
@@ -74,6 +74,10 @@ cp platforms/libqxcb.so ${QT_PLUGIN_PATH}/platforms
 # jpeg plugin for saving images
 mkdir -p ${QT_PLUGIN_PATH}/imageformats
 cp imageformats/libqjpeg.so ${QT_PLUGIN_PATH}/imageformats
+
+# plugin for print support
+mkdir -p ${QT_PLUGIN_PATH}/printsupport
+cp printsupport/libcupsprintersupport.so ${QT_PLUGIN_PATH}/printsupport
 
 # using Fusion theme does not require bundling any style plugin
 

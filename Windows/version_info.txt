@@ -6,8 +6,8 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
     # filevers and prodvers should be always a tuple with four items: (1, 2, 3, 4)
-    filevers=(3, 1, 5, 0),
-    prodvers=(3, 1, 5, 0),
+    filevers=(3, 2, 0, 0),
+    prodvers=(3, 2, 0, 0),
     # Do not touch these values
     mask=0x0,
     flags=0x0,
@@ -22,10 +22,10 @@ VSVersionInfo(
       StringTable(
         '040904b0',
         [StringStruct('FileDescription', 'Gospel PDF Viewer'),
-        StringStruct('FileVersion', '3.1.5'),
+        StringStruct('FileVersion', '3.2.0'),
         StringStruct('LegalCopyright', 'Arindam Chaudhuri <ksharindam@gmail.com>'),
         StringStruct('ProductName', 'Gospel Pdf Viewer'),
-        StringStruct('ProductVersion', '3.1.5')]),
+        StringStruct('ProductVersion', '3.2.0')]),
 		StringStruct('CompanyName', 'Arindamsoft')
       ]), 
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
