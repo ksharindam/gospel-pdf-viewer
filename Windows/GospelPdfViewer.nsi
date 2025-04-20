@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PROG_NAME "Gospel Pdf Viewer"
-!define PROG_VERSION "3.2.0"
+!define PROG_VERSION "3.2.1"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "gospel-pdf.ico"
 !define PROG_EXEC "GospelPdf.exe"

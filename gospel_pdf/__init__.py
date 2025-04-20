@@ -24,8 +24,8 @@ Description = A poppler or pymupdf based PDF viewer written in PyQt
 ...........................................................................
 """
 
-__version__ = '3.2.0'
+__version__ = '3.2.1'
 
 AUTHOR_NAME = "Arindam Chaudhuri"
 AUTHOR_EMAIL = "ksharindam@gmail.com"
-COPYRIGHT_YEAR = "2017-2024"
+COPYRIGHT_YEAR = "2017-2025"

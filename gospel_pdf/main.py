@@ -972,9 +972,10 @@ def elideMiddle(text, length):
 
 def main():
     app = QApplication(sys.argv)
+    filename = os.path.abspath(sys.argv[-1])
     win = Window()
-    if len(sys.argv)>1 and os.path.exists(os.path.abspath(sys.argv[-1])):
-        win.loadPDFfile(os.path.abspath(sys.argv[-1]))
+    if len(sys.argv)>1 and os.path.exists(filename):
+        win.loadPDFfile(filename)
     app.aboutToQuit.connect(win.onAppQuit)
     sys.exit(app.exec_())
 
