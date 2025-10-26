@@ -25,6 +25,8 @@ from __init__ import __version__, COPYRIGHT_YEAR, AUTHOR_NAME, AUTHOR_EMAIL
 from ui_mainwindow import Ui_window
 from dialogs import ExportToImageDialog, DocInfoDialog
 from pdf_lib import PdfDocument, backend, backend_version
+from plugin_manager import loadPlugins
+
 
 DEBUG = False
 def debug(*args):
@@ -87,6 +89,7 @@ class Window(QMainWindow, Ui_window):
     renderRequested = pyqtSignal(int, int)
     loadFileRequested = pyqtSignal(str, str)
     findTextRequested = pyqtSignal(str, int, bool)
+    fileOpened = pyqtSignal(str)
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -222,16 +225,21 @@ class Window(QMainWindow, Ui_window):
         height = int(self.settings.value("WindowHeight", 717))
         self.resize(width, height)
         self.show()
+        self.plugins = []# container for plugin objects
+        loadPlugins(self)
+        if not self.plugins:
+            self.pluginsMenu.menuAction().setVisible(False)
+
 
     def addRecentFiles(self):
         self.recent_files_actions[:] = [] # pythonic way to clear list
-        self.menuRecentFiles.clear()
+        self.recentFilesMenu.clear()
         for each in self.recent_files:
             name = elideMiddle(os.path.basename(each), 60)
-            action = self.menuRecentFiles.addAction(name, self.openRecentFile)
+            action = self.recentFilesMenu.addAction(name, self.openRecentFile)
             self.recent_files_actions.append(action)
-        self.menuRecentFiles.addSeparator()
-        self.menuRecentFiles.addAction(QIcon(':/icons/edit-clear.png'), 'Clear Recents', self.clearRecents)
+        self.recentFilesMenu.addSeparator()
+        self.recentFilesMenu.addAction(QIcon(':/icons/edit-clear.png'), 'Clear Recents', self.clearRecents)
 
     def openRecentFile(self):
         action = self.sender()
@@ -240,7 +248,7 @@ class Window(QMainWindow, Ui_window):
 
     def clearRecents(self):
         self.recent_files_actions[:] = []
-        self.menuRecentFiles.clear()
+        self.recentFilesMenu.clear()
         self.recent_files[:] = []
 
     def removeOldDoc(self):
@@ -315,6 +323,7 @@ class Window(QMainWindow, Ui_window):
         self.setWindowTitle(os.path.basename(self.filename)+ " - Gospel PDF " + __version__)
         if self.curr_page_no != 1 :
             QTimer.singleShot(150+self.pages_count//3, self.jumpToCurrentPage)
+        self.fileOpened.emit(self.filename)
 
     def setRenderedImage(self, page_no, image):
         """ takes a QImage and sets pixmap of the specified page
@@ -724,6 +733,13 @@ class Window(QMainWindow, Ui_window):
         self.statusbar.adjustSize()
         self.statusbar.move(0, self.height()-self.statusbar.height())
         self.statusbar.show()
+
+    def showNotification(self, title, text):
+        notifier = Notifier(self)
+        notifier.showNotification(title, text)
+
+    def showWarning(self, title, text):
+        QMessageBox.warning(self, title, text)
 
     def resizeEvent(self, ev):
         QMainWindow.resizeEvent(self, ev)

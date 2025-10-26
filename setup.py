@@ -22,7 +22,7 @@ setup(
       },
       data_files=[
                  ('share/applications', ['data/gospel-pdf.desktop']),
-                 ('share/icons', ['data/gospel-pdf.png'])
+                 ('share/icons/hicolor/scalable/apps', ['data/gospel-pdf.png'])
       ],
       include_package_data=True,
       zip_safe=False

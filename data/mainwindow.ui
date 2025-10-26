@@ -55,7 +55,7 @@
      <height>25</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
+   <widget class="QMenu" name="fileMenu">
     <property name="title">
      <string>&amp;File</string>
     </property>
@@ -69,7 +69,7 @@
      </property>
      <addaction name="pageToImageAction"/>
     </widget>
-    <widget class="QMenu" name="menuRecentFiles">
+    <widget class="QMenu" name="recentFilesMenu">
      <property name="title">
       <string>Recent Files</string>
      </property>
@@ -79,14 +79,14 @@
      </property>
     </widget>
     <addaction name="openFileAction"/>
-    <addaction name="menuRecentFiles"/>
+    <addaction name="recentFilesMenu"/>
     <addaction name="lockUnlockAction"/>
     <addaction name="menuExport"/>
     <addaction name="printAction"/>
     <addaction name="docInfoAction"/>
     <addaction name="quitAction"/>
    </widget>
-   <widget class="QMenu" name="menuNavigate">
+   <widget class="QMenu" name="navigateMenu">
     <property name="title">
      <string>Navigate</string>
     </property>
@@ -96,23 +96,29 @@
     <addaction name="firstPageAction"/>
     <addaction name="lastPageAction"/>
    </widget>
-   <widget class="QMenu" name="menuView">
+   <widget class="QMenu" name="viewMenu">
     <property name="title">
      <string>&amp;View</string>
     </property>
     <addaction name="zoominAction"/>
     <addaction name="zoomoutAction"/>
    </widget>
-   <widget class="QMenu" name="menuHelp">
+   <widget class="QMenu" name="helpMenu">
     <property name="title">
      <string>Help</string>
     </property>
     <addaction name="aboutAction"/>
    </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuView"/>
-   <addaction name="menuNavigate"/>
-   <addaction name="menuHelp"/>
+   <widget class="QMenu" name="pluginsMenu">
+    <property name="title">
+     <string>Plugins</string>
+    </property>
+   </widget>
+   <addaction name="fileMenu"/>
+   <addaction name="viewMenu"/>
+   <addaction name="navigateMenu"/>
+   <addaction name="pluginsMenu"/>
+   <addaction name="helpMenu"/>
   </widget>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
