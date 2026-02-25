@@ -28,4 +28,4 @@ __version__ = '3.3.0'
 
 AUTHOR_NAME = "Arindam Chaudhuri"
 AUTHOR_EMAIL = "ksharindam@gmail.com"
-COPYRIGHT_YEAR = "2017-2025"
+COPYRIGHT_YEAR = "2017-2026"

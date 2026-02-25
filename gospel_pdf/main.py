@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# This file is a part of GospelPdfViewer Program which is GNU GPLv3 licensed
+# Copyright (C) 2017-2026 Arindam Chaudhuri <ksharindam@gmail.com>
 
 import sys, os
 from subprocess import Popen
@@ -37,16 +39,25 @@ HOMEDIR = os.path.expanduser("~")
 
 #pt2pixel = lambda point, dpi : dpi*point/72.0
 
-class Renderer(QObject):
-    rendered = pyqtSignal(int, QImage)
-    textFound = pyqtSignal(int, list)
+class App:
+    """ container for global variables """
+    window = None
+    manager = None
+    doc = None
+    filename = ''
+    passwd = ''
+    pages = []
+    page_dpis = {}
+    presentation_mode = False
 
-    def __init__(self, page_set=1):
-        # page_set = 1 for odd, and 0 for even
+
+class Worker(QObject):
+    renderFinished = pyqtSignal(int, QImage, int)
+    searchFinished = pyqtSignal(int, list)
+
+    def __init__(self):
         QObject.__init__(self)
         self.doc = None
-        self.page_set = page_set
-        self.painter = QPainter()
         self.link_color = QColor(0,0,127, 40)
 
     def loadDocument(self, filename, password=''):
@@ -55,40 +66,133 @@ class Renderer(QObject):
         if self.doc.isLocked():
             self.doc.unlock(password)
 
-    def render(self, page_no, dpi):
+    def render(self, worker, page_no, dpi):
         """ render(int, int)
         This slot takes page no. and dpi and renders that page, then emits a signal with QImage"""
-        # Returns when both is true or both is false
-        if page_no%2 != self.page_set:
+        if worker!=self:
             return
         img = self.doc.renderPage(page_no, dpi)
         # Add Heighlight over Link Annotation
-        self.painter.begin(img)
+        painter = QPainter(img)
         annots = self.doc.pageLinkAnnotations(page_no)
         for subtype,rect,data in annots:
             x,y,w,h = [x*dpi/72 for x in rect]
-            self.painter.fillRect(QRectF(x, y, w+1, h+1), self.link_color)
-        self.painter.end()
-        self.rendered.emit(page_no, img)
+            painter.fillRect(QRectF(x, y, w+1, h+1), self.link_color)
+        painter.end()
+        self.renderFinished.emit(page_no, img, dpi)
 
 
-    def findText(self, text, page_num, find_reverse):
-        if find_reverse:
-            pages = [i for i in range(1,page_num+1)]
-            pages.reverse()
-        else:
-            pages = [i for i in range(page_num, self.doc.pageCount()+1)]
+    def findText(self, worker, text, start, direction):
+        if worker!=self:
+            return
+        end = 1 if direction==-1 else self.doc.pageCount()
+        pages = [i for i in range(start, end+direction, direction)]
         for page_no in pages:
             textareas = self.doc.findText(page_no, text)
             if textareas != []:
-                self.textFound.emit(page_no, textareas)
-                break
+                self.searchFinished.emit(page_no, textareas)
+                return
+        self.searchFinished.emit(0, [])
+
+
+class Manager(QObject):
+    # signals
+    renderRequested = pyqtSignal(Worker, int, int)# worker, page_no, dpi
+    searchRequested = pyqtSignal(Worker, str, int, int)#worker, text, start, direction
+
+    def __init__(self, parent):
+        QObject.__init__(self, parent)
+        self.curr_page_no = -1
+        self.threads = []
+        self.workers = {} # {worker:state} dictionary, state = free|busy
+        self.render_cache = {} #{page_no:image} dictionary
+        self.being_rendered = [] # sent to worker for rendering
+        self.search_text = None
+        # Create separate thread and move worker to it
+        self.thread_count = 3
+        for i in range(self.thread_count):
+            thread = QThread(self)
+            self.threads.append(thread)
+            worker = Worker()
+            worker.moveToThread(thread) # must be moved before connecting signals
+            App.window.loadFileRequested.connect(worker.loadDocument)
+            self.renderRequested.connect(worker.render)
+            worker.renderFinished.connect(self.onRenderFinished)
+            self.searchRequested.connect(worker.findText)
+            worker.searchFinished.connect(self.onSearchFinished)
+            thread.start()
+            # add to workers dict
+            self.workers[worker] = "free"
+
+    def clear_cache(self):
+        self.render_cache.clear()
+
+    def set_current_page_no(self, page_no):
+        self.curr_page_no = page_no
+        self.run_free_workers()
+
+    def find_text(self, text, start_page, direction):
+        self.search_text = [text, start_page, direction]
+        self.run_free_workers()
+
+    def run_free_workers(self):
+        # get which pages to render
+        to_render = []
+        for x in (0, -1, 1):
+            page_no = self.curr_page_no + x
+            if page_no>0 and page_no<=App.window.pages_count:
+                if not page_no in self.render_cache and not page_no in self.being_rendered:
+                    to_render.append(page_no)
+
+        free_workers = [worker for worker,is_free in self.workers.items() if is_free]
+        for worker in free_workers:
+            if self.search_text:
+                self.workers[worker] = "busy"
+                self.searchRequested.emit(worker, *self.search_text)
+                self.search_text = None
+            elif to_render:
+                self.workers[worker] = "busy"
+                page_no = to_render.pop(0)
+                self.renderRequested.emit(worker, page_no, App.page_dpis[page_no])
+                self.being_rendered.append(page_no)
+
+
+    def onRenderFinished(self, page_no, image, dpi):
+        worker = self.sender()
+        self.workers[worker] = "free"
+        self.being_rendered.remove(page_no)
+        # if page resized while rendering, rendered image is of no use
+        if dpi!=App.page_dpis[page_no]:
+            self.run_free_workers()
+            return
+        self.render_cache[page_no] = QPixmap.fromImage(image)
+        App.window.setPageImage(page_no, self.render_cache[page_no])
+        # remove old rendered pages
+        if len(self.render_cache)>10:
+            cleared_page_no = list(self.render_cache.keys())[0]
+            del self.render_cache[cleared_page_no]
+            App.window.clearPageImage(cleared_page_no)
+            debug("Clear Page :", cleared_page_no)
+        self.run_free_workers()
+        #debug("Rendered Pages :", self.rendered_pages)
+
+    def onSearchFinished(self, page_nos, areas):
+        worker = self.sender()
+        self.workers[worker] = "free"
+        App.window.onSearchFinished(page_nos, areas)
+
+    def close_threads(self):
+        """ Close running threads """
+        for thread in self.threads:
+            loop = QEventLoop()
+            thread.finished.connect(loop.quit)
+            thread.quit()
+            loop.exec()
+
 
 
 class Window(QMainWindow, Ui_window):
-    renderRequested = pyqtSignal(int, int)
     loadFileRequested = pyqtSignal(str, str)
-    findTextRequested = pyqtSignal(str, int, bool)
     fileOpened = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -193,33 +297,14 @@ class Window(QMainWindow, Ui_window):
         self.findBackButton.clicked.connect(self.findBack)
         self.findCloseButton.clicked.connect(self.dockSearch.hide)
         self.dockSearch.visibilityChanged.connect(self.toggleFindMode)
-        # Create separate thread and move renderer to it
-        self.thread1 = QThread(self)
-        self.renderer1 = Renderer(0)
-        self.renderer1.moveToThread(self.thread1) # this must be moved before connecting signals
-        self.renderRequested.connect(self.renderer1.render)
-        self.loadFileRequested.connect(self.renderer1.loadDocument)
-        self.findTextRequested.connect(self.renderer1.findText)
-        self.renderer1.rendered.connect(self.setRenderedImage)
-        self.renderer1.textFound.connect(self.onTextFound)
-        self.thread1.start()
-        self.thread2 = QThread(self)
-        self.renderer2 = Renderer(1)
-        self.renderer2.moveToThread(self.thread2)
-        self.renderRequested.connect(self.renderer2.render)
-        self.loadFileRequested.connect(self.renderer2.loadDocument)
-        self.renderer2.rendered.connect(self.setRenderedImage)
-        self.thread2.start()
         # Initialize Variables
-        QDir.setCurrent(QDir.homePath())
-        self.doc = None
-        self.filename = ''
-        self.passwd = ''
-        self.pages = []
+        App.window = self
+        App.manager = Manager(self) # thread manager
+        self.pages = [] # page widgets
         self.jumped_from = None
-        self.max_preload = 1
         self.recent_files_actions = []
-        self.addRecentFiles()
+        self.updateRecentFilesMenu()
+        QDir.setCurrent(QDir.homePath())
         # Show Window
         width = int(self.settings.value("WindowWidth", 1040))
         height = int(self.settings.value("WindowHeight", 717))
@@ -231,7 +316,7 @@ class Window(QMainWindow, Ui_window):
             self.pluginsMenu.menuAction().setVisible(False)
 
 
-    def addRecentFiles(self):
+    def updateRecentFilesMenu(self):
         self.recent_files_actions[:] = [] # pythonic way to clear list
         self.recentFilesMenu.clear()
         for each in self.recent_files:
@@ -252,7 +337,7 @@ class Window(QMainWindow, Ui_window):
         self.recent_files[:] = []
 
     def removeOldDoc(self):
-        if not self.doc:
+        if not App.doc:
             return
         # Save current page number
         self.saveFileData()
@@ -264,11 +349,11 @@ class Window(QMainWindow, Ui_window):
         self.frame.deleteLater()
         self.attachAction.setVisible(False)
         self.jumped_from = None
-        self.addRecentFiles()
+        self.updateRecentFilesMenu()
 
     def loadPDFfile(self, filename):
         """ Loads pdf document in all threads """
-        print("opening : ", filename)
+        debug("opening : ", filename)
         filename = os.path.expanduser(filename)
         doc = PdfDocument(filename)
         if not doc.isValid():
@@ -277,30 +362,30 @@ class Window(QMainWindow, Ui_window):
         if doc.isLocked() :
             password = QInputDialog.getText(self, 'This PDF is locked', 'Enter Password :', 2)[0]
             if password == '' :
-                if self.doc == None: sys.exit(1)#exit if first document
+                if App.doc == None: sys.exit(1)#exit if first document
                 else : return
             unlocked = doc.unlock(password)
             if not unlocked:
                 return QMessageBox.critical(self, "Failed !","Incorrect Password")
-            self.passwd = password
+            App.passwd = password
             self.lockUnlockAction.setText("Save Unlocked")
         else:
             self.lockUnlockAction.setText("Encrypt PDF")
         self.removeOldDoc()
-        self.doc = doc
-        self.filename = filename
-        self.pages_count = self.doc.pageCount()
+        App.doc = doc
+        App.filename = filename
+        self.pages_count = App.doc.pageCount()
         self.curr_page_no = 1
         self.rendered_pages = []
         self.getOutlines()
         # Load Document in other threads
-        self.loadFileRequested.emit(self.filename, password)
-        if collapseUser(self.filename) in self.history_filenames:
-            self.curr_page_no = int(self.history_page_no[self.history_filenames.index(collapseUser(self.filename))])
+        self.loadFileRequested.emit(App.filename, password)
+        if collapseUser(App.filename) in self.history_filenames:
+            self.curr_page_no = int(self.history_page_no[self.history_filenames.index(collapseUser(App.filename))])
         self.curr_page_no = min(self.curr_page_no, self.pages_count)
         self.scroll_render_lock = False
         # Show/Add widgets
-        if self.doc.hasEmbeddedFiles():
+        if App.doc.hasEmbeddedFiles():
             self.attachAction.setVisible(True)
         self.frame = Frame(self.scrollAreaWidgetContents, self.scrollArea)
         self.verticalLayout = QVBoxLayout(self.frame)
@@ -310,9 +395,7 @@ class Window(QMainWindow, Ui_window):
         self.frame.copyTextRequested.connect(self.copyText)
         self.frame.showStatusRequested.connect(self.showStatus)
 
-        # Render 4 pages, (Preload 3 pages)
-        self.max_preload = min(4, self.pages_count)
-        # Add pages
+        # Add page widgets
         for i in range(self.pages_count):
             page = PageWidget(i+1, self.frame)
             self.verticalLayout.addWidget(page, 0, Qt.AlignCenter)
@@ -320,41 +403,22 @@ class Window(QMainWindow, Ui_window):
         self.resizePages()
         self.pageNoLabel.setText('<b>%i/%i</b>' % (self.curr_page_no, self.pages_count) )
         self.gotoPageValidator.setTop(self.pages_count)
-        self.setWindowTitle(os.path.basename(self.filename)+ " - Gospel PDF " + __version__)
+        self.setWindowTitle(os.path.basename(App.filename)+ " - Gospel PDF " + __version__)
         if self.curr_page_no != 1 :
             QTimer.singleShot(150+self.pages_count//3, self.jumpToCurrentPage)
-        self.fileOpened.emit(self.filename)
+        self.fileOpened.emit(App.filename)
 
-    def setRenderedImage(self, page_no, image):
-        """ takes a QImage and sets pixmap of the specified page
-            when number of rendered pages exceeds a certain number, old page image is
-            deleted to save memory """
+    def setPageImage(self, page_no, image):
         debug("Set Rendered Image :", page_no)
-        self.pages[page_no-1].setPageData(page_no, QPixmap.fromImage(image), self.doc)
-        # Request to render next page
-        if self.curr_page_no <= page_no < (self.curr_page_no + self.max_preload - 2):
-            if (page_no+2 not in self.rendered_pages) and (page_no+2 <= self.pages_count):
-              self.rendered_pages.append(page_no+2)
-              self.renderRequested.emit(page_no+2, self.pages[page_no+1].dpi)
-        # Replace old rendered pages with blank image
-        if len(self.rendered_pages)>10:
-            cleared_page_no = self.rendered_pages.pop(0)
-            debug("Clear Page :", cleared_page_no)
-            self.pages[cleared_page_no-1].clear()
-        debug("Rendered Pages :", self.rendered_pages)
+        self.pages[page_no-1].setImage(image)
+
+    def clearPageImage(self, page_no):
+        """ To save memory, set a blank image """
+        self.pages[page_no-1].clear()
 
     def renderCurrentPage(self):
-        """ Requests to render current page. if it is already rendered, then request
-            to render next unrendered page """
-        requested = 0
-        for page_no in range(self.curr_page_no, self.curr_page_no+self.max_preload):
-            # using self.pages_count instead of len(self.pages) caused crash sometimes
-            if (page_no not in self.rendered_pages) and (page_no <= len(self.pages)):
-                self.rendered_pages.append(page_no)
-                self.renderRequested.emit(page_no, self.pages[page_no-1].dpi)
-                requested += 1
-                debug("Render Requested :", page_no)
-                if requested == 2: return
+        """ Requests to render current page """
+        App.manager.set_current_page_no(self.curr_page_no)
 
     def onMouseScroll(self, pos):
         """ It is called when vertical scrollbar value is changed.
@@ -371,7 +435,7 @@ class Window(QMainWindow, Ui_window):
 
     def openFile(self):
         filename, sel_filter = QFileDialog.getOpenFileName(self,
-                                      "Select Document to Open", self.filename,
+                                      "Select Document to Open", App.filename,
                                       "Portable Document Format (*.pdf);;All Files (*)" )
         if filename != "":
             self.loadPDFfile(filename)
@@ -384,9 +448,9 @@ class Window(QMainWindow, Ui_window):
         if self.lockUnlockAction.text()=="Encrypt PDF":
             self.encryptPDF()
             return
-        filename, ext = os.path.splitext(self.filename)
+        filename, ext = os.path.splitext(App.filename)
         new_name = filename + "-unlocked.pdf"
-        proc = Popen(["qpdf", "--decrypt", "--password="+self.passwd, self.filename, new_name])
+        proc = Popen(["qpdf", "--decrypt", "--password="+App.passwd, App.filename, new_name])
         stdout, stderr = proc.communicate()
         if proc.returncode==0:
             notifier = Notifier(self)
@@ -399,9 +463,9 @@ class Window(QMainWindow, Ui_window):
                                                 QLineEdit.PasswordEchoOnEdit)
         if not ok or password=="":
             return
-        filename, ext = os.path.splitext(self.filename)
+        filename, ext = os.path.splitext(App.filename)
         new_name = filename + "-locked.pdf"
-        proc = Popen(["qpdf", "--encrypt", password, password, '128', '--', self.filename, new_name])
+        proc = Popen(["qpdf", "--encrypt", password, password, '128', '--', App.filename, new_name])
         stdout, stderr = proc.communicate()
         if proc.returncode == 0:
             basename = os.path.basename(new_name)
@@ -412,12 +476,12 @@ class Window(QMainWindow, Ui_window):
 
     def printFile(self):
         if which("quikprint"):
-            Popen(["quikprint", self.filename])
+            Popen(["quikprint", App.filename])
             return
         printer = QPrinter(QPrinter.HighResolution)
         dlg = QPrintDialog(printer, self)
         dlg.setOption(dlg.PrintCurrentPage, True)
-        dlg.setMinMax(1, self.doc.pageCount())
+        dlg.setMinMax(1, App.doc.pageCount())
         # add a tab for Scaling options
         widget = QWidget(dlg)
         widget.setWindowTitle("Scaling")
@@ -446,7 +510,7 @@ class Window(QMainWindow, Ui_window):
             to_page = from_page
         else:
             from_page = printer.fromPage() or 1
-            to_page = printer.toPage() or self.doc.pageCount()
+            to_page = printer.toPage() or App.doc.pageCount()
         # get cups options
         o = {}
         props = printer.printEngine().property(0xfe00)# cups property
@@ -500,7 +564,7 @@ class Window(QMainWindow, Ui_window):
             if page_no not in page_nos:
                 continue
             # tried Poppler.Page.renderToPainter() but always fails
-            img = self.doc.renderPage(page_no, render_dpi)
+            img = App.doc.renderPage(page_no, render_dpi)
             rect = painter.viewport()
             scale_ = scale or min(rect.width()/img.width(), rect.height()/img.height())
             painter.scale(scale_, scale_)
@@ -514,8 +578,8 @@ class Window(QMainWindow, Ui_window):
             try:
                 dpi = int(dialog.dpiEdit.text())
                 for page_no in range(dialog.pageNoSpin.value(), dialog.toPageNoSpin.value()+1):
-                    filename = os.path.splitext(self.filename)[0]+'-'+str(page_no)+'.jpg'
-                    img = self.doc.renderPage(page_no, dpi)
+                    filename = os.path.splitext(App.filename)[0]+'-'+str(page_no)+'.jpg'
+                    img = App.doc.renderPage(page_no, dpi)
                     img.save(filename)
                 notifier = Notifier(self)
                 notifier.showNotification("Successful !","Image(s) has been saved")
@@ -523,8 +587,8 @@ class Window(QMainWindow, Ui_window):
                 QMessageBox.warning(self, "Failed !","Failed to export to Image")
 
     def docInfo(self):
-        info = self.doc.info()
-        page_size = "%.1f x %.1f pts" % self.doc.pageSize(self.curr_page_no)
+        info = App.doc.info()
+        page_size = "%.1f x %.1f pts" % App.doc.pageSize(self.curr_page_no)
         info['Page Size'] = page_size
         dialog = DocInfoDialog(info, self)
         dialog.exec_()
@@ -579,20 +643,24 @@ class Window(QMainWindow, Ui_window):
 
     def resizePages(self):
         ''' Resize all pages according to zoom level '''
+        App.manager.clear_cache()# remove old rendered images
         page_dpi = self.zoom_levels[self.zoomLevelCombo.currentIndex()]*SCREEN_DPI/100
         fixed_width = self.availableWidth()
         for i in range(self.pages_count):
-            pg_width, pg_height = self.doc.pageSize(i+1) # width in points
+            pg_width, pg_height = App.doc.pageSize(i+1) # width in points
             if self.zoomLevelCombo.currentIndex() == 0: # if Fit Width
                 dpi = int(72.0*fixed_width/pg_width)
             else:
                 dpi = int(page_dpi)
             self.pages[i].dpi = dpi
             self.pages[i].setFixedSize(int(pg_width*dpi/72), int(pg_height*dpi/72))
+            App.page_dpis[i+1] = dpi
         for page_no in self.rendered_pages:
             self.pages[page_no-1].clear()
         self.rendered_pages = []
+        # re-render current page
         self.renderCurrentPage()
+
 
     def setZoom(self, index):
         """ Gets called when zoom level is changed"""
@@ -629,44 +697,39 @@ class Window(QMainWindow, Ui_window):
           self.pages[self.search_result_page-1].highlight_area = None
           self.pages[self.search_result_page-1].updateImage()
 
-    def findNext(self):
-        """ search text in current page and next pages """
+    def findText(self, text, direction):
+        """ direction is +1 for forward and -1 for backward """
         text = self.findTextEdit.text()
         if text == "" : return
         # search from current page when text changed
         if self.search_text != text or self.search_result_page == 0:
             search_from_page = self.curr_page_no
         else:
-            search_from_page = self.search_result_page + 1
-        self.findTextRequested.emit(text, search_from_page, False)
+            search_from_page = self.search_result_page + direction
+        App.manager.find_text(text, search_from_page, direction)
         if self.search_result_page != 0:     # clear previous highlights
             self.pages[self.search_result_page-1].highlight_area = None
             self.pages[self.search_result_page-1].updateImage()
             self.search_result_page = 0
         self.search_text = text
 
-    def findBack(self):
-        """ search text in pages before current page """
-        text = self.findTextEdit.text()
-        if text == "" : return
-        if self.search_text != text or self.search_result_page == 0:
-            search_from_page = self.curr_page_no
-        else:
-            search_from_page = self.search_result_page - 1
-        self.findTextRequested.emit(text, search_from_page, True)
-        if self.search_result_page != 0:
-            self.pages[self.search_result_page-1].highlight_area = None
-            self.pages[self.search_result_page-1].updateImage()
-            self.search_result_page = 0
-        self.search_text = text
+    def findNext(self):
+        self.findText(self.findTextEdit.text(), +1)
 
-    def onTextFound(self, page_no, areas):
+    def findBack(self):
+        self.findText(self.findTextEdit.text(), -1)
+
+    def onSearchFinished(self, page_no, areas):
+        """ page_no is zero if no result found """
+        if not page_no:
+            return
         self.pages[page_no-1].highlight_area = areas
         self.search_result_page = page_no
         if self.pages[page_no-1].pixmap():
             self.pages[page_no-1].updateImage()
         first_result_pos = areas[0][1]
         self.jumpToPage(page_no, first_result_pos)
+
 
 #########      Cpoy Text to Clip Board      #########
     def toggleCopyText(self, checked):
@@ -676,7 +739,7 @@ class Window(QMainWindow, Ui_window):
         zoom = self.pages[page_no-1].dpi/72
         rect = [x/zoom for x in rect]
         # Copy text to clipboard
-        text = self.doc.getPageText(page_no, rect)
+        text = App.doc.getPageText(page_no, rect)
         QApplication.clipboard().setText(text)
         self.copyTextAction.setChecked(False)
         self.toggleCopyText(False)
@@ -684,7 +747,7 @@ class Window(QMainWindow, Ui_window):
 ##########      Other Functions      ##########
 
     def getOutlines(self):
-        toc = self.doc.toc()
+        toc = App.doc.toc()
         if not toc:
             self.dockWidget.hide()
             return
@@ -743,7 +806,7 @@ class Window(QMainWindow, Ui_window):
 
     def resizeEvent(self, ev):
         QMainWindow.resizeEvent(self, ev)
-        if self.filename == '' : return
+        if App.filename == '' : return
         if self.zoomLevelCombo.currentIndex() == 0:
             self.resize_page_timer.start(200)
 
@@ -758,8 +821,8 @@ class Window(QMainWindow, Ui_window):
             self.settings.setValue("WindowHeight", self.height())
 
     def saveFileData(self):
-        if self.filename != '':
-            filename = collapseUser(self.filename)
+        if App.filename != '':
+            filename = collapseUser(App.filename)
             if filename in self.history_filenames:
                 index = self.history_filenames.index(filename)
                 self.history_page_no[index] = self.curr_page_no
@@ -789,15 +852,7 @@ class Window(QMainWindow, Ui_window):
         return QMainWindow.closeEvent(self, ev)
 
     def onAppQuit(self):
-        """ Close running threads """
-        loop1 = QEventLoop()
-        loop2 = QEventLoop()
-        self.thread1.finished.connect(loop1.quit)
-        self.thread2.finished.connect(loop2.quit)
-        self.thread1.quit()
-        loop1.exec_()
-        self.thread2.quit()
-        loop2.exec_()
+        App.manager.close_threads()
 
 
 
@@ -860,17 +915,31 @@ class PageWidget(QLabel):
         self.image = QPixmap()
         self.dpi = 72# dpi is set when pages are resized
 
-    def setPageData(self, page_no, pixmap, doc):
-        self.image = pixmap
+    def setImage(self, image):
+        self.image = image
         self.updateImage()
         if self.annots_listed : return
-        links = doc.pageLinkAnnotations(page_no)
+        links = App.doc.pageLinkAnnotations(self.page_num)
         for link in links:
             subtype,rect,data = link
             x,y,w,h = [x*self.dpi/72 for x in rect]
             self.link_areas.append(QRectF(x,y, w+1, h+1))
             self.link_annots.append(link)
         self.annots_listed = True
+
+    def updateImage(self):
+        """ repaint page widget, and draw highlight areas """
+        if self.highlight_area:
+            img = self.image.copy()
+            painter = QPainter(img)
+            zoom = self.dpi/72.0
+            for area in self.highlight_area:
+                rect = [x*zoom for x in area]
+                painter.fillRect(QRectF(*rect), QColor(0,255,0, 127))
+            painter.end()
+            self.setPixmap(img)
+        else:
+            self.setPixmap(self.image)
 
     def clear(self):
         QLabel.clear(self)
@@ -938,21 +1007,6 @@ class PageWidget(QLabel):
             self.pm = None
             return
         ev.ignore()
-
-    def updateImage(self):
-        """ repaint page widget, and draw highlight areas """
-        if self.highlight_area:
-            img = self.image.copy()
-            painter = QPainter(img)
-            zoom = self.dpi/72.0
-            for area in self.highlight_area:
-                rect = [x*zoom for x in area]
-                painter.fillRect(QRectF(*rect), QColor(0,255,0, 127))
-            painter.end()
-            self.setPixmap(img)
-        else:
-            self.setPixmap(self.image)
-
 
 
 
