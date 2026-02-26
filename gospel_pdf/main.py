@@ -144,7 +144,7 @@ class Manager(QObject):
                 if not page_no in self.render_cache and not page_no in self.being_rendered:
                     to_render.append(page_no)
 
-        free_workers = [worker for worker,is_free in self.workers.items() if is_free]
+        free_workers = [worker for worker,state in self.workers.items() if state=="free"]
         for worker in free_workers:
             if self.search_text:
                 self.workers[worker] = "busy"
@@ -155,7 +155,6 @@ class Manager(QObject):
                 page_no = to_render.pop(0)
                 self.renderRequested.emit(worker, page_no, App.page_dpis[page_no])
                 self.being_rendered.append(page_no)
-
 
     def onRenderFinished(self, page_no, image, dpi):
         worker = self.sender()
@@ -174,7 +173,7 @@ class Manager(QObject):
             App.window.clearPageImage(cleared_page_no)
             debug("Clear Page :", cleared_page_no)
         self.run_free_workers()
-        #debug("Rendered Pages :", self.rendered_pages)
+
 
     def onSearchFinished(self, page_nos, areas):
         worker = self.sender()
@@ -302,6 +301,7 @@ class Window(QMainWindow, Ui_window):
         App.manager = Manager(self) # thread manager
         self.pages = [] # page widgets
         self.jumped_from = None
+        self.copy_text_mode = False
         self.recent_files_actions = []
         self.updateRecentFilesMenu()
         QDir.setCurrent(QDir.homePath())
@@ -376,14 +376,12 @@ class Window(QMainWindow, Ui_window):
         App.filename = filename
         self.pages_count = App.doc.pageCount()
         self.curr_page_no = 1
-        self.rendered_pages = []
         self.getOutlines()
         # Load Document in other threads
         self.loadFileRequested.emit(App.filename, password)
         if collapseUser(App.filename) in self.history_filenames:
             self.curr_page_no = int(self.history_page_no[self.history_filenames.index(collapseUser(App.filename))])
         self.curr_page_no = min(self.curr_page_no, self.pages_count)
-        self.scroll_render_lock = False
         # Show/Add widgets
         if App.doc.hasEmbeddedFiles():
             self.attachAction.setVisible(True)
@@ -391,9 +389,6 @@ class Window(QMainWindow, Ui_window):
         self.verticalLayout = QVBoxLayout(self.frame)
         self.horizontalLayout_2.addWidget(self.frame)
         self.scrollArea.verticalScrollBar().setValue(0)
-        self.frame.jumpToRequested.connect(self.jumpToPage)
-        self.frame.copyTextRequested.connect(self.copyText)
-        self.frame.showStatusRequested.connect(self.showStatus)
 
         # Add page widgets
         for i in range(self.pages_count):
@@ -405,7 +400,7 @@ class Window(QMainWindow, Ui_window):
         self.gotoPageValidator.setTop(self.pages_count)
         self.setWindowTitle(os.path.basename(App.filename)+ " - Gospel PDF " + __version__)
         if self.curr_page_no != 1 :
-            QTimer.singleShot(150+self.pages_count//3, self.jumpToCurrentPage)
+            self.jumpToPage(self.curr_page_no)
         self.fileOpened.emit(App.filename)
 
     def setPageImage(self, page_no, image):
@@ -426,7 +421,6 @@ class Window(QMainWindow, Ui_window):
         index = self.verticalLayout.indexOf(self.frame.childAt(int(self.frame.width()/2), int(pos)))
         if index == -1: return
         self.pageNoLabel.setText('<b>%i/%i</b>' % (index+1, self.pages_count) )
-        if self.scrollArea.verticalScrollBar().isSliderDown() or self.scroll_render_lock : return
         self.curr_page_no = index+1
         self.renderCurrentPage()
 
@@ -593,9 +587,6 @@ class Window(QMainWindow, Ui_window):
         dialog = DocInfoDialog(info, self)
         dialog.exec_()
 
-    def jumpToCurrentPage(self):
-        """ this is used as a slot, to connect with a timer"""
-        self.jumpToPage(self.curr_page_no)
 
     def jumpToPage(self, page_num, top=0.0):
         """ scrolls to a particular page and position """
@@ -653,20 +644,19 @@ class Window(QMainWindow, Ui_window):
             else:
                 dpi = int(page_dpi)
             self.pages[i].dpi = dpi
-            self.pages[i].setFixedSize(int(pg_width*dpi/72), int(pg_height*dpi/72))
+            self.pages[i].setFixedSize(int(round(pg_width*dpi/72)), int(round(pg_height*dpi/72)))
             App.page_dpis[i+1] = dpi
-        for page_no in self.rendered_pages:
-            self.pages[page_no-1].clear()
-        self.rendered_pages = []
+        # wait for resize to take effect
+        wait(100)
         # re-render current page
         self.renderCurrentPage()
 
 
     def setZoom(self, index):
         """ Gets called when zoom level is changed"""
-        self.scroll_render_lock = True # rendering on scroll is locked as set scroll position
         self.resizePages()
-        QTimer.singleShot(300, self.afterZoom)
+        scrolbar_pos = self.pages[self.curr_page_no-1].pos().y()
+        self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
 
     def zoomIn(self):
         index = self.zoomLevelCombo.currentIndex()
@@ -682,10 +672,7 @@ class Window(QMainWindow, Ui_window):
         self.zoomLevelCombo.setCurrentIndex(index-1)
         self.setZoom(index-1)
 
-    def afterZoom(self):
-        scrolbar_pos = self.pages[self.curr_page_no-1].pos().y()
-        self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
-        self.scroll_render_lock = False
+
 #########            Search Text            #########
     def toggleFindMode(self, enable):
         if enable:
@@ -733,7 +720,7 @@ class Window(QMainWindow, Ui_window):
 
 #########      Cpoy Text to Clip Board      #########
     def toggleCopyText(self, checked):
-        self.frame.enableCopyTextMode(checked)
+        self.copy_text_mode = checked
 
     def copyText(self, page_no, rect):
         zoom = self.pages[page_no-1].dpi/72
@@ -788,11 +775,11 @@ class Window(QMainWindow, Ui_window):
         if not page_num: return
         self.jumpToPage(page_num, top)
 
-    def showStatus(self, url):
-        if url=="":
+    def showStatus(self, text):
+        if not text:
             self.statusbar.hide()
             return
-        self.statusbar.setText(url)
+        self.statusbar.setText(text)
         self.statusbar.adjustSize()
         self.statusbar.move(0, self.height()-self.statusbar.height())
         self.statusbar.show()
@@ -814,8 +801,7 @@ class Window(QMainWindow, Ui_window):
         for i in range(self.pages_count):
             self.pages[i].annots_listed = False # Clears prev link annotation positions
         self.resizePages()
-        wait(300)
-        self.jumpToCurrentPage()
+        self.jumpToPage(self.curr_page_no)
         if not self.isMaximized():
             self.settings.setValue("WindowWidth", self.width())
             self.settings.setValue("WindowHeight", self.height())
@@ -857,11 +843,7 @@ class Window(QMainWindow, Ui_window):
 
 
 class Frame(QFrame):
-    """ This widget is a container of PageWidgets. PageWidget communicates
-        Window through this widget """
-    jumpToRequested = pyqtSignal(int, float)
-    copyTextRequested = pyqtSignal(int, list)
-    showStatusRequested = pyqtSignal(str)
+    """ This widget is a container of PageWidgets """
     # parent is scrollAreaWidgetContents
     def __init__(self, parent, scrollArea):
         QFrame.__init__(self, parent)
@@ -871,7 +853,6 @@ class Frame(QFrame):
         self.hScrollbar = scrollArea.horizontalScrollBar()
         self.setMouseTracking(True)
         self.clicked = False
-        self.copy_text_mode = False
 
     def mousePressEvent(self, ev):
         self.click_pos = ev.globalPos()
@@ -887,29 +868,17 @@ class Frame(QFrame):
         self.vScrollbar.setValue(self.v_scrollbar_pos + self.click_pos.y() - ev.globalY())
         self.hScrollbar.setValue(self.h_scrollbar_pos + self.click_pos.x() - ev.globalX())
 
-    def jumpTo(self, page_num, top):
-        self.jumpToRequested.emit(page_num, top)
-
-    def enableCopyTextMode(self, enable):
-        self.copy_text_mode = enable
-
-    def copyText(self, page_num, rect):
-        self.copyTextRequested.emit(page_num, rect)
-
-    def showStatus(self, msg):
-        self.showStatusRequested.emit(msg)
 
 
 class PageWidget(QLabel):
     """ This widget shows a rendered page """
-    def __init__(self, page_num, frame=None):
-        QLabel.__init__(self, frame)
-        self.manager = frame
+    def __init__(self, page_num, parent):
+        QLabel.__init__(self, parent)
         self.setMouseTracking(True)
-        self.setSizePolicy(0,0)
+        self.setSizePolicy(0,0)#fixed
         self.link_areas = []
         self.link_annots = []
-        self.annots_listed, self.copy_text_mode = False, False
+        self.annots_listed = False
         self.click_point, self.highlight_area = None, None
         self.page_num = page_num
         self.image = QPixmap()
@@ -947,7 +916,7 @@ class PageWidget(QLabel):
 
     def mouseMoveEvent(self, ev):
         # Draw rectangle when mouse is clicked and dragged in copy text mode.
-        if self.manager.copy_text_mode:
+        if App.window.copy_text_mode:
             if self.click_point:
                 pm = self.pm.copy()
                 painter = QPainter()
@@ -963,20 +932,20 @@ class PageWidget(QLabel):
                 subtype,rect,data = self.link_annots[i]
                 # For jump to page link
                 if subtype == "GoTo":
-                    self.manager.showStatus("Jump To Page : %i" % data[0])
+                    App.window.showStatus("Jump To Page : %i" % data[0])
                     self.setCursor(Qt.PointingHandCursor)
                 # For URL link
                 elif subtype == "URI":
-                    self.manager.showStatus("URL : %s" % data)
+                    App.window.showStatus("URL : %s" % data)
                     self.setCursor(Qt.PointingHandCursor)
                 return
-        self.manager.showStatus("")
+        App.window.showStatus("")
         self.unsetCursor()
         ev.ignore()         # pass to underlying frame if not over link or copy text mode
 
     def mousePressEvent(self, ev):
         # In text copy mode
-        if self.manager.copy_text_mode:
+        if App.window.copy_text_mode:
             self.click_point = ev.pos()
             self.pm = self.pixmap().copy()
             return
@@ -987,7 +956,7 @@ class PageWidget(QLabel):
             subtype,rect,data = self.link_annots[i]
             # For jump to page link, data==(page_no,top)
             if subtype == "GoTo":
-                self.manager.jumpTo(*data)
+                App.window.jumpToPage(*data)
             # For URL link, data==url
             elif subtype == "URI":
                 if data.startswith("http"):
@@ -999,9 +968,9 @@ class PageWidget(QLabel):
         ev.ignore()
 
     def mouseReleaseEvent(self, ev):
-        if self.manager.copy_text_mode:
+        if App.window.copy_text_mode:
             rect = QRectF(self.click_point, ev.pos()).getRect()
-            self.manager.copyText(self.page_num, list(rect))
+            App.window.copyText(self.page_num, list(rect))
             self.setPixmap(self.pm)
             self.click_point = None
             self.pm = None
