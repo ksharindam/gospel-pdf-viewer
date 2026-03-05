@@ -1,10 +1,10 @@
 [Desktop Entry]
-Version=1.0
 Type=Application
 Name=Gospel PDF
-Comment=PopplerQt4 based PDF Reader
-Exec=gospel-pdf %f
+Comment=Simple PDF Viewer
+Exec=gospel_pdf %f
 Icon=gospel-pdf
 Categories= Office;
+MimeType=application/pdf;
 Terminal=false
 StartupNotify=false

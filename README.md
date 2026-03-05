@@ -5,7 +5,7 @@
 ![Downloads Latest](https://img.shields.io/github/downloads/ksharindam/gospel-pdf-viewer/latest/total)
 
 # Gospel Pdf Viewer
-Poppler or MuPDF based pdf viewer for Windows and Linux written in PyQt
+Simple yet powerful pdf viewer for Windows and Linux  
 
 ### Description
 This program is aimed at short startup time, with all generally used features.  
@@ -24,33 +24,15 @@ For Linux download .AppImage package, mark it executable, and double click to ru
 * python3-poppler-qt5 or pymupdf  
 * qpdf (to unlock pdf, optional)  
 
-To Install this program open terminal inside gospel-pdf-viewer directory.  
-First compile UI and Resources file  
-`cd data`  
-`./compile_ui`  
-`./compile_rc`  
-`cd ..`  
-And then run following command..  
-`sudo pip3 install .`  
+To Install this program open terminal inside project root directory.  
+Run following command..  
+`sudo pip3 install --no-build-isolation .`  
 or  
-`pip3 install --user .`  
+`pip3 install --user --no-build-isolation .`  
 
-Gospel PDF will be automatically added to application menu.
 
 To uninstall run..  
-`sudo pip3 uninstall gospel-pdf`
-
-
-### Usage
-To run after installing, type command..  
-  `gospel-pdf`  
-Or  
-  `gospel-pdf filename.pdf`  
-
-If you want to run this program without/before installing, then  
-Open terminal and change directory to gospel-pdf-viewer and run  
-  `./gospel_pdf.py`  
-
+`sudo pip3 uninstall gospel-pdf`  
 
 ### Screenshots
 

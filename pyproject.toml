@@ -1,0 +1,20 @@
+# see https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools"]
+
+[tool.setuptools.dynamic]
+version = {attr = "gospel_pdf.__version__"}
+
+[project]
+name = "gospel-pdf"
+authors = [
+    {name = "Arindam Chaudhuri", email = "ksharindam@gmail.com"},
+]
+license = "GPL-3.0-or-later"
+requires-python = ">=3.8"
+
+dynamic = ["version"]
+
+[project.gui-scripts]
+gospel_pdf = "gospel_pdf.main:main"

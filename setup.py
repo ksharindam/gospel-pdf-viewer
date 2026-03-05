@@ -1,29 +1,42 @@
-
 from setuptools import setup
-from gospel_pdf import __version__, AUTHOR_NAME, AUTHOR_EMAIL
+from setuptools.command.install import install
+try:
+    from setuptools.command.bdist_wheel import bdist_wheel
+except:
+    from wheel.bdist_wheel import bdist_wheel
+from subprocess import check_call
+import platform
+
+# allows to run commands before 'setup.py install' (used by dh-python)
+class Install(install):
+    def run(self):
+        check_call("pyrcc5 -o ./gospel_pdf/resources_rc.py ./data/resources.qrc".split())
+        check_call("pyuic5 -o ./gospel_pdf/ui_mainwindow.py ./data/mainwindow.ui".split())
+        install.run(self)
+
+# allows to run commands before building wheel
+class BdistWheel(bdist_wheel):
+    def finalize_options(self):
+        check_call("pyrcc5 -o ./gospel_pdf/resources_rc.py ./data/resources.qrc".split())
+        check_call("pyuic5 -o ./gospel_pdf/ui_mainwindow.py ./data/mainwindow.ui".split())
+        bdist_wheel.finalize_options(self)
+
+
+if platform.system()=='Linux':
+    data_files = [('share/applications', ['data/gospel-pdf.desktop']),
+                ('share/icons/hicolor/scalable/apps', ['data/gospel-pdf.png'])]
+else:
+    data_files = []
 
 setup(
-      name='gospel-pdf',
-      version=__version__,
-      description='Poppler or pymupdf based fast PDF Viewer',
-      keywords='pyqt pyqt5 pdf-viewer poppler poppler-qt5',
-      url='http://github.com/ksharindam/gospel-pdf-viewer',
-      author=AUTHOR_NAME,
-      author_email=AUTHOR_EMAIL,
-      license='GNU GPLv3',
-      packages=['gospel_pdf'],
-      classifiers=[
-      'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-      'Operating System :: POSIX :: Linux',
-      'Programming Language :: Python :: 3',
-      ],
-      entry_points={
-          'gui_scripts': ['gospel-pdf=gospel_pdf.main:main'],
-      },
-      data_files=[
-                 ('share/applications', ['data/gospel-pdf.desktop']),
-                 ('share/icons/hicolor/scalable/apps', ['data/gospel-pdf.png'])
-      ],
-      include_package_data=True,
-      zip_safe=False
-)
+    name='gospel-pdf',
+    #version="3.4.0",
+    packages=['gospel_pdf'],
+    entry_points={
+      'gui_scripts': ['gospel_pdf=gospel_pdf.main:main'],
+    },
+    data_files = data_files,
+    cmdclass = {'bdist_wheel': BdistWheel, 'install': Install},
+    include_package_data=True,
+    zip_safe=False
+    )
