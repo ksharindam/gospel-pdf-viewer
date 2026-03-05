@@ -18,11 +18,11 @@ def import_from_path(module_name, file_path):
     return module
 
 
-def loadPlugins(window):
+def loadPlugins(app):
     if not os.path.exists(PLUGIN_DIR):
         return
-    global WINDOW
-    WINDOW = window
+    global App
+    App = app
     files = [f for f in os.listdir(PLUGIN_DIR) if f.endswith(".py")]
     files = [f for f in files if os.path.isfile(PLUGIN_DIR +"/"+f)]# filter files only
     for i,filename in enumerate(files):
@@ -34,26 +34,28 @@ def loadPlugins(window):
 
 
 class Plugin():
-    def __init__(self, window):
+    def __init__(self, app):
         self.name = "Unnamed Plugin"
         self.description = "No description available"
-        self.window = window
-        window.fileOpened.connect(self.onFileOpen)
+        self.app = app
+        self.window = app.window
+        self.window.fileOpened.connect(self.onFileOpen)
 
     @property
     def filename(self):
-        return self.window.filename
+        return self.app.filename
 
     def renderPage(self, page_no, dpi):
-        return self.window.doc.renderPage(page_no, dpi)
+        return self.app.doc.renderPage(page_no, dpi)
 
     def onFileOpen(self, filename):
+        """ connected to fileOpened signal of window """
         pass
 
 
 def register_plugin(PluginClass):
     try:
-        plugin = PluginClass(WINDOW)
-        WINDOW.plugins.append(plugin)# storing it prevents getting deleted by python
+        plugin = PluginClass(App)
+        App.plugins.append(plugin)# storing it prevents getting deleted by python
     except:
         print(traceback.format_exc())

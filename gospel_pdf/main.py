@@ -42,13 +42,12 @@ HOMEDIR = os.path.expanduser("~")
 class App:
     """ container for global variables """
     window = None
+    plugins = []
     manager = None
     doc = None
     filename = ''
     passwd = ''
-    pages = []
     page_dpis = {}
-    presentation_mode = False
 
 
 class Worker(QObject):
@@ -164,14 +163,15 @@ class Manager(QObject):
         if dpi!=App.page_dpis[page_no]:
             self.run_free_workers()
             return
-        self.render_cache[page_no] = QPixmap.fromImage(image)
-        App.window.setPageImage(page_no, self.render_cache[page_no])
         # remove old rendered pages
         if len(self.render_cache)>10:
             cleared_page_no = list(self.render_cache.keys())[0]
             del self.render_cache[cleared_page_no]
             App.window.clearPageImage(cleared_page_no)
             debug("Clear Page :", cleared_page_no)
+        # set rendered image
+        self.render_cache[page_no] = QPixmap.fromImage(image)
+        App.window.onNewPageRendered(page_no, self.render_cache[page_no])
         self.run_free_workers()
 
 
@@ -192,7 +192,7 @@ class Manager(QObject):
 
 class Window(QMainWindow, Ui_window):
     loadFileRequested = pyqtSignal(str, str)
-    fileOpened = pyqtSignal(str)
+    fileOpened = pyqtSignal(str) # for plugin manager
 
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -216,6 +216,12 @@ class Window(QMainWindow, Ui_window):
         self.findTextAction = QAction(QIcon(":/icons/search.png"), "Find Text", self)
         self.findTextAction.setShortcut('Ctrl+F')
         self.findTextAction.triggered.connect(self.dockSearch.show)
+        self.exitPresentationAction = QAction("Exit Presentation", self)
+        self.exitPresentationAction.setShortcut('Esc')
+        self.exitPresentationAction.triggered.connect(self.exitPresentationMode)
+        self.addAction(self.exitPresentationAction)
+        self.addAction(self.nextPageAction)# these are added to work in presentation mode
+        self.addAction(self.prevPageAction)
         # connect menu actions signals
         self.openFileAction.triggered.connect(self.openFile)
         self.lockUnlockAction.triggered.connect(self.lockUnlock)
@@ -225,6 +231,7 @@ class Window(QMainWindow, Ui_window):
         self.docInfoAction.triggered.connect(self.docInfo)
         self.zoominAction.triggered.connect(self.zoomIn)
         self.zoomoutAction.triggered.connect(self.zoomOut)
+        self.presentationAction.triggered.connect(self.startPresentationMode)
         self.undoJumpAction.triggered.connect(self.undoJump)
         self.prevPageAction.triggered.connect(self.goPrevPage)
         self.nextPageAction.triggered.connect(self.goNextPage)
@@ -269,6 +276,7 @@ class Window(QMainWindow, Ui_window):
         self.toolBar.addAction(self.findTextAction)
         #self.toolBar.addAction(self.saveUnlockedAction)
         self.toolBar.addWidget(spacer)
+        self.toolBar.addAction(self.presentationAction)
         self.attachAction = self.toolBar.addAction(QIcon(":/icons/attachment.png"), "A")
         self.attachAction.setVisible(False)
         self.toolBar.addSeparator()
@@ -289,8 +297,7 @@ class Window(QMainWindow, Ui_window):
         self.available_area = [desktop.availableGeometry().width(), desktop.availableGeometry().height()]
         self.zoomLevelCombo.setCurrentIndex(int(self.settings.value("ZoomLevel", 2)))
         # Connect Signals
-        self.scrollArea.verticalScrollBar().valueChanged.connect(self.onMouseScroll)
-        self.scrollArea.verticalScrollBar().sliderReleased.connect(self.onSliderRelease)
+        self.scrollArea.verticalScrollBar().valueChanged.connect(self.onPageScroll)
         self.findTextEdit.returnPressed.connect(self.findNext)
         self.findNextButton.clicked.connect(self.findNext)
         self.findBackButton.clicked.connect(self.findBack)
@@ -300,8 +307,12 @@ class Window(QMainWindow, Ui_window):
         App.window = self
         App.manager = Manager(self) # thread manager
         self.pages = [] # page widgets
+        self.render_on_scroll = True
         self.jumped_from = None
         self.copy_text_mode = False
+        self.presentation_mode = False
+        self.is_maximized = False # state before entering presentation mode
+        self.outlines_visible = False
         self.recent_files_actions = []
         self.updateRecentFilesMenu()
         QDir.setCurrent(QDir.homePath())
@@ -310,11 +321,9 @@ class Window(QMainWindow, Ui_window):
         height = int(self.settings.value("WindowHeight", 717))
         self.resize(width, height)
         self.show()
-        self.plugins = []# container for plugin objects
-        loadPlugins(self)
-        if not self.plugins:
+        loadPlugins(App)
+        if not App.plugins:
             self.pluginsMenu.menuAction().setVisible(False)
-
 
     def updateRecentFilesMenu(self):
         self.recent_files_actions[:] = [] # pythonic way to clear list
@@ -341,12 +350,7 @@ class Window(QMainWindow, Ui_window):
             return
         # Save current page number
         self.saveFileData()
-        # Remove old document
-        for i in range(len(self.pages)):
-            self.verticalLayout.removeWidget(self.pages[-1])
-        for i in range(len(self.pages)):
-            self.pages.pop().deleteLater()
-        self.frame.deleteLater()
+        self.removeAllPages()
         self.attachAction.setVisible(False)
         self.jumped_from = None
         self.updateRecentFilesMenu()
@@ -385,47 +389,151 @@ class Window(QMainWindow, Ui_window):
         # Show/Add widgets
         if App.doc.hasEmbeddedFiles():
             self.attachAction.setVisible(True)
-        self.frame = Frame(self.scrollAreaWidgetContents, self.scrollArea)
-        self.verticalLayout = QVBoxLayout(self.frame)
-        self.horizontalLayout_2.addWidget(self.frame)
-        self.scrollArea.verticalScrollBar().setValue(0)
-
-        # Add page widgets
-        for i in range(self.pages_count):
-            page = PageWidget(i+1, self.frame)
-            self.verticalLayout.addWidget(page, 0, Qt.AlignCenter)
-            self.pages.append(page)
-        self.resizePages()
         self.pageNoLabel.setText('<b>%i/%i</b>' % (self.curr_page_no, self.pages_count) )
         self.gotoPageValidator.setTop(self.pages_count)
         self.setWindowTitle(os.path.basename(App.filename)+ " - Gospel PDF " + __version__)
-        if self.curr_page_no != 1 :
-            self.jumpToPage(self.curr_page_no)
+        # load pages
+        self.addPages()
+        self.jumpToPage(self.curr_page_no)
         self.fileOpened.emit(App.filename)
 
-    def setPageImage(self, page_no, image):
-        debug("Set Rendered Image :", page_no)
-        self.pages[page_no-1].setImage(image)
+    def onNewPageRendered(self, page_no, image):
+        if self.presentation_mode:
+            if page_no == self.curr_page_no:
+                self.pages[0].setImage(image)
+            return
+        links = App.doc.pageLinkAnnotations(page_no)
+        self.pages[page_no-1].setImage(image, links)
 
     def clearPageImage(self, page_no):
         """ To save memory, set a blank image """
+        if self.presentation_mode:
+            return
         self.pages[page_no-1].clear()
 
     def renderCurrentPage(self):
         """ Requests to render current page """
         App.manager.set_current_page_no(self.curr_page_no)
 
-    def onMouseScroll(self, pos):
+    def onPageScroll(self, pos):
         """ It is called when vertical scrollbar value is changed.
             Get the current page number on scrolling, then requests to render"""
-        index = self.verticalLayout.indexOf(self.frame.childAt(int(self.frame.width()/2), int(pos)))
-        if index == -1: return
+        if not self.render_on_scroll:
+            return
+        child = self.frame.childAt(int(self.frame.width()/2), int(pos))
+        if child not in self.pages:
+            return
+        index = self.pages.index(child)
         self.pageNoLabel.setText('<b>%i/%i</b>' % (index+1, self.pages_count) )
         self.curr_page_no = index+1
         self.renderCurrentPage()
 
-    def onSliderRelease(self):
-        self.onMouseScroll(self.scrollArea.verticalScrollBar().value())
+    def addPages(self):
+        self.render_on_scroll = False
+        self.frame = Frame(self.scrollAreaWidgetContents, self.scrollArea)
+        self.scrollLayout.addWidget(self.frame)
+        # Add page widgets
+        for page_no in range(1, self.pages_count+1):
+            page = PageWidget(page_no, self.frame)
+            self.frame.pageLayout.addWidget(page, 0, Qt.AlignCenter)
+            self.pages.append(page)
+        self.resizePages()
+        self.render_on_scroll = True
+
+    def removeAllPages(self):
+        while self.pages:
+            page = self.pages.pop()
+            self.frame.pageLayout.removeWidget(page)
+            page.deleteLater()
+        self.frame.deleteLater()
+
+    def resizePages(self):
+        ''' Resize all pages according to zoom level '''
+        self.render_on_scroll = False
+        App.manager.clear_cache()# remove old rendered images
+        page_dpi = self.zoom_levels[self.zoomLevelCombo.currentIndex()]*SCREEN_DPI/100
+        wait(100) # get proper viewport width
+        fixed_width = self.scrollArea.viewport().width() - 30
+        for i in range(self.pages_count):
+            pg_width, pg_height = App.doc.pageSize(i+1) # width in points
+            if self.zoomLevelCombo.currentIndex() == 0: # if Fit Width
+                dpi = int(72.0*fixed_width/pg_width)
+            else:
+                dpi = int(page_dpi)
+            self.pages[i].dpi = dpi
+            self.pages[i].setFixedSize(int(round(pg_width*dpi/72)), int(round(pg_height*dpi/72)))
+            App.page_dpis[i+1] = dpi
+        # wait for resize to take effect
+        wait(100)
+        self.render_on_scroll = True
+
+
+    def startPresentationMode(self):
+        """ show fullscreen with black background """
+        if self.presentation_mode:
+            return
+        self.scrollArea.setStyleSheet("QScrollArea { background-color:black; }")
+        self.scrollAreaWidgetContents.setStyleSheet("background-color: black;")
+        self.is_maximized = self.isMaximized()
+        self.outlines_visible = self.dockWidget.isVisible()
+        self.showFullScreen()
+        self.toolBar.hide()
+        self.menubar.hide()
+        self.dockWidget.hide()
+        self.presentation_mode = True
+        self.render_on_scroll = False
+        # Remove all pages
+        self.removeAllPages()
+        # in presentation mode, we need to add only one page
+        self.frame = Frame(self.scrollAreaWidgetContents, self.scrollArea)
+        self.scrollLayout.addWidget(self.frame)
+        self.frame.pageLayout.setContentsMargins(0,0,0,0)
+        page = PageWidget(self.curr_page_no, self.frame)
+        self.frame.pageLayout.addWidget(page, 0, Qt.AlignCenter)
+        self.pages.append(page)
+        # wait for resize to take effect
+        wait(100)
+        App.manager.clear_cache()
+        max_w = self.scrollArea.viewport().width()
+        max_h = self.scrollArea.viewport().height()
+        page_no = self.curr_page_no
+        for page_no in range(1,self.pages_count+1):
+            page_w, page_h = App.doc.pageSize(page_no) # size in points
+            dpi = min(int(72*max_w/page_w), int(72*max_h/page_h))
+            App.page_dpis[page_no] = dpi
+
+        self.showCurrentSlide()
+
+    def exitPresentationMode(self):
+        # enter normal mode
+        if not self.presentation_mode:
+            return
+        self.removeAllPages()
+        if self.is_maximized:
+            self.showMaximized()
+        else:
+            self.showNormal()
+        self.scrollArea.setStyleSheet("QScrollArea { background-color: #b8b8b8; }")
+        self.scrollAreaWidgetContents.setStyleSheet("background-color: #b8b8b8;")
+        self.menubar.show()
+        self.toolBar.show()
+        if self.outlines_visible:
+            self.dockWidget.show()
+        self.presentation_mode = False
+        self.render_on_scroll = True
+        wait(100)
+        self.addPages()
+
+    def showCurrentSlide(self):
+        """ show presentation slide """
+        self.pages[0].clear()
+        dpi = App.page_dpis[self.curr_page_no]
+        page_w, page_h = App.doc.pageSize(self.curr_page_no) # size in points
+        self.pages[0].setFixedSize(int(round(page_w*dpi/72)), int(round(page_h*dpi/72)))
+        if image := App.manager.render_cache.get(self.curr_page_no,None):
+            self.pages[0].setImage(image)
+        self.renderCurrentPage()
+
 
     def openFile(self):
         filename, sel_filter = QFileDialog.getOpenFileName(self,
@@ -592,10 +700,13 @@ class Window(QMainWindow, Ui_window):
         """ scrolls to a particular page and position """
         if page_num < 1: page_num = 1
         elif page_num > self.pages_count: page_num = self.pages_count
-        top *= self.pages[page_num-1].dpi/72
-        if not (0 < top < self.pages[page_num-1].height()): top = 0
         self.jumped_from = self.curr_page_no
         self.curr_page_no = page_num
+        if self.presentation_mode:
+            self.showCurrentSlide()
+            return
+        top *= self.pages[page_num-1].dpi/72
+        if not (0 < top < self.pages[page_num-1].height()): top = 0
         scrollbar_pos = self.pages[page_num-1].pos().y()
         scrollbar_pos += top
         self.scrollArea.verticalScrollBar().setValue(int(scrollbar_pos))
@@ -627,36 +738,13 @@ class Window(QMainWindow, Ui_window):
 
 ######################  Zoom and Size Management  ##########################
 
-    def availableWidth(self):
-        """ Returns available width for rendering a page """
-        dock_width = 0 if self.dockWidget.isHidden() else self.dockWidget.width()
-        return self.width() - dock_width - 50
-
-    def resizePages(self):
-        ''' Resize all pages according to zoom level '''
-        App.manager.clear_cache()# remove old rendered images
-        page_dpi = self.zoom_levels[self.zoomLevelCombo.currentIndex()]*SCREEN_DPI/100
-        fixed_width = self.availableWidth()
-        for i in range(self.pages_count):
-            pg_width, pg_height = App.doc.pageSize(i+1) # width in points
-            if self.zoomLevelCombo.currentIndex() == 0: # if Fit Width
-                dpi = int(72.0*fixed_width/pg_width)
-            else:
-                dpi = int(page_dpi)
-            self.pages[i].dpi = dpi
-            self.pages[i].setFixedSize(int(round(pg_width*dpi/72)), int(round(pg_height*dpi/72)))
-            App.page_dpis[i+1] = dpi
-        # wait for resize to take effect
-        wait(100)
-        # re-render current page
-        self.renderCurrentPage()
-
-
     def setZoom(self, index):
         """ Gets called when zoom level is changed"""
+        scrollbar = self.scrollArea.verticalScrollBar()
+        pos = scrollbar.value()/scrollbar.maximum()
         self.resizePages()
-        scrolbar_pos = self.pages[self.curr_page_no-1].pos().y()
-        self.scrollArea.verticalScrollBar().setValue(scrolbar_pos)
+        scrollbar_pos = int(pos * scrollbar.maximum())
+        scrollbar.setValue(scrollbar_pos)
 
     def zoomIn(self):
         index = self.zoomLevelCombo.currentIndex()
@@ -798,8 +886,8 @@ class Window(QMainWindow, Ui_window):
             self.resize_page_timer.start(200)
 
     def onWindowResize(self):
-        for i in range(self.pages_count):
-            self.pages[i].annots_listed = False # Clears prev link annotation positions
+        if self.presentation_mode:
+            return
         self.resizePages()
         self.jumpToPage(self.curr_page_no)
         if not self.isMaximized():
@@ -842,32 +930,31 @@ class Window(QMainWindow, Ui_window):
 
 
 
-class Frame(QFrame):
+class Frame(QWidget):
     """ This widget is a container of PageWidgets """
     # parent is scrollAreaWidgetContents
     def __init__(self, parent, scrollArea):
-        QFrame.__init__(self, parent)
-        self.setFrameShape(QFrame.StyledPanel)
-        self.setFrameShadow(QFrame.Raised)
+        QWidget.__init__(self, parent)
+        self.pageLayout = QVBoxLayout(self)
         self.vScrollbar = scrollArea.verticalScrollBar()
         self.hScrollbar = scrollArea.horizontalScrollBar()
         self.setMouseTracking(True)
-        self.clicked = False
+        self.mouse_pressed = False
 
     def mousePressEvent(self, ev):
         self.click_pos = ev.globalPos()
         self.v_scrollbar_pos = self.vScrollbar.value()
         self.h_scrollbar_pos = self.hScrollbar.value()
-        self.clicked = True
+        self.mouse_pressed = True
 
     def mouseReleaseEvent(self, ev):
-        self.clicked = False
+        self.mouse_pressed = False
 
     def mouseMoveEvent(self, ev):
-        if not self.clicked : return
+        """ drag to scroll """
+        if not self.mouse_pressed : return
         self.vScrollbar.setValue(self.v_scrollbar_pos + self.click_pos.y() - ev.globalY())
         self.hScrollbar.setValue(self.h_scrollbar_pos + self.click_pos.x() - ev.globalX())
-
 
 
 class PageWidget(QLabel):
@@ -876,25 +963,19 @@ class PageWidget(QLabel):
         QLabel.__init__(self, parent)
         self.setMouseTracking(True)
         self.setSizePolicy(0,0)#fixed
-        self.link_areas = []
-        self.link_annots = []
-        self.annots_listed = False
+        self.link_annots = [] # list of (QRectF area, LinkAnnotation) tuple
         self.click_point, self.highlight_area = None, None
         self.page_num = page_num
         self.image = QPixmap()
         self.dpi = 72# dpi is set when pages are resized
 
-    def setImage(self, image):
+    def setImage(self, image, links=[]):
         self.image = image
         self.updateImage()
-        if self.annots_listed : return
-        links = App.doc.pageLinkAnnotations(self.page_num)
         for link in links:
             subtype,rect,data = link
             x,y,w,h = [x*self.dpi/72 for x in rect]
-            self.link_areas.append(QRectF(x,y, w+1, h+1))
-            self.link_annots.append(link)
-        self.annots_listed = True
+            self.link_annots.append((QRectF(x,y, w+1, h+1), link))
 
     def updateImage(self):
         """ repaint page widget, and draw highlight areas """
@@ -913,6 +994,8 @@ class PageWidget(QLabel):
     def clear(self):
         QLabel.clear(self)
         self.image = QPixmap()
+        self.link_annots.clear()
+
 
     def mouseMoveEvent(self, ev):
         # Draw rectangle when mouse is clicked and dragged in copy text mode.
@@ -927,9 +1010,9 @@ class PageWidget(QLabel):
             return
 
         # Change cursor if cursor is over link annotation
-        for i, area in enumerate(self.link_areas):
-            if area.contains(ev.pos()):
-                subtype,rect,data = self.link_annots[i]
+        for rect, link in self.link_annots:
+            if rect.contains(ev.pos()):
+                subtype,rect,data = link
                 # For jump to page link
                 if subtype == "GoTo":
                     App.window.showStatus("Jump To Page : %i" % data[0])
@@ -950,10 +1033,10 @@ class PageWidget(QLabel):
             self.pm = self.pixmap().copy()
             return
         # In normal mode
-        for i, area in enumerate(self.link_areas):
-            if not area.contains(ev.pos()):
+        for rect, link in self.link_annots:
+            if not rect.contains(ev.pos()):
                 continue
-            subtype,rect,data = self.link_annots[i]
+            subtype,rect,data = link
             # For jump to page link, data==(page_no,top)
             if subtype == "GoTo":
                 App.window.jumpToPage(*data)
