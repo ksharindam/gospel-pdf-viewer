@@ -9,7 +9,7 @@ version = {attr = "pdf_bunny.__version__"}
 [project]
 name = "pdf-bunny"
 authors = [
-    {name = "Arindam Chaudhuri", email = "ksharindam@gmail.com"},
+    {name = "Arindam Chaudhuri", email = "arindamsoft94@gmail.com"},
 ]
 license = "GPL-3.0-or-later"
 requires-python = ">=3.8"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is a part of PDF Bunny Program which is GNU GPLv3 licensed
-# Copyright (C) 2017-2026 Arindam Chaudhuri <ksharindam@gmail.com>
+# Copyright (C) 2017-2026 Arindam Chaudhuri <arindamsoft94@gmail.com>
 
 import sys, os
 from subprocess import Popen
