@@ -10,7 +10,7 @@
 
 
 Name "${PROG_NAME}"
-OutFile "${PROG_NAME}-${PROG_VERSION}.exe"
+OutFile "PDF_Bunny-${PROG_VERSION}.exe"
 ; InstallDir must not have space
 InstallDir "$PROGRAMFILES64\PDF_Bunny"
 ; Get previous install directory if already installed
