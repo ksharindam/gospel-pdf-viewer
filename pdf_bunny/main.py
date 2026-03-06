@@ -1064,7 +1064,7 @@ class PageWidget(QLabel):
 
 class Notifier(QSystemTrayIcon):
     def __init__(self, parent):
-        QSystemTrayIcon.__init__(self, QIcon(':/icons/adobe.png'), parent)
+        QSystemTrayIcon.__init__(self, QIcon(':/icons/pdf-bunny.png'), parent)
         self.messageClicked.connect(self.deleteLater)
         self.activated.connect(self.deleteLater)
 

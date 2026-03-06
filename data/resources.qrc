@@ -1,6 +1,5 @@
 <RCC>
   <qresource>
-    <file>icons/adobe.png</file>
     <file>icons/attachment.png</file>
     <file>icons/cancel.png</file>
     <file>icons/copy.png</file>
@@ -15,6 +14,7 @@
     <file>icons/info.png</file>
     <file>icons/next.png</file>
     <file>icons/open.png</file>
+    <file>icons/pdf-bunny.png</file>
     <file>icons/presentation.png</file>
     <file>icons/prev.png</file>
     <file>icons/quit.png</file>

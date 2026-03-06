@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="resources.qrc">
-    <normaloff>:/icons/adobe.png</normaloff>:/icons/adobe.png</iconset>
+    <normaloff>:/icons/pdf-bunny.png</normaloff>:/icons/pdf-bunny.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="centralLayout">
@@ -301,23 +301,6 @@
     <string>Shift+Backspace</string>
    </property>
   </action>
-  <action name="saveFileAction">
-   <property name="text">
-    <string>Save</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
-  </action>
-  <action name="toPSAction">
-   <property name="icon">
-    <iconset>
-     <normaloff>:/adobe.png</normaloff>:/adobe.png</iconset>
-   </property>
-   <property name="text">
-    <string>to PostScript</string>
-   </property>
-  </action>
   <action name="docInfoAction">
    <property name="icon">
     <iconset resource="resources.qrc">
@@ -325,11 +308,6 @@
    </property>
    <property name="text">
     <string>Document Info</string>
-   </property>
-  </action>
-  <action name="actionClear">
-   <property name="text">
-    <string>clear</string>
    </property>
   </action>
   <action name="pageToImageAction">
