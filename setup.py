@@ -10,30 +10,30 @@ import platform
 # allows to run commands before 'setup.py install' (used by dh-python)
 class Install(install):
     def run(self):
-        check_call("pyrcc5 -o ./gospel_pdf/resources_rc.py ./data/resources.qrc".split())
-        check_call("pyuic5 -o ./gospel_pdf/ui_mainwindow.py ./data/mainwindow.ui".split())
+        check_call("pyrcc5 -o ./pdf_bunny/resources_rc.py ./data/resources.qrc".split())
+        check_call("pyuic5 -o ./pdf_bunny/ui_mainwindow.py ./data/mainwindow.ui".split())
         install.run(self)
 
 # allows to run commands before building wheel
 class BdistWheel(bdist_wheel):
     def finalize_options(self):
-        check_call("pyrcc5 -o ./gospel_pdf/resources_rc.py ./data/resources.qrc".split())
-        check_call("pyuic5 -o ./gospel_pdf/ui_mainwindow.py ./data/mainwindow.ui".split())
+        check_call("pyrcc5 -o ./pdf_bunny/resources_rc.py ./data/resources.qrc".split())
+        check_call("pyuic5 -o ./pdf_bunny/ui_mainwindow.py ./data/mainwindow.ui".split())
         bdist_wheel.finalize_options(self)
 
 
 if platform.system()=='Linux':
-    data_files = [('share/applications', ['data/gospel-pdf.desktop']),
-                ('share/icons/hicolor/scalable/apps', ['data/gospel-pdf.png'])]
+    data_files = [('share/applications', ['data/pdf-bunny.desktop']),
+                ('share/icons/hicolor/scalable/apps', ['data/pdf-bunny.png'])]
 else:
     data_files = []
 
 setup(
-    name='gospel-pdf',
+    name='pdf-bunny',
     #version="3.4.0",
-    packages=['gospel_pdf'],
+    packages=['pdf_bunny'],
     entry_points={
-      'gui_scripts': ['gospel_pdf=gospel_pdf.main:main'],
+      'gui_scripts': ['pdf_bunny=pdf_bunny.main:main'],
     },
     data_files = data_files,
     cmdclass = {'bdist_wheel': BdistWheel, 'install': Install},

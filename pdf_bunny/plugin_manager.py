@@ -6,7 +6,7 @@ import traceback
 from PyQt5.QtCore import QStandardPaths
 
 
-PLUGIN_DIR =  QStandardPaths.writableLocation(QStandardPaths.AppDataLocation) + "/GospelPdfViewer/plugins"
+PLUGIN_DIR =  QStandardPaths.writableLocation(QStandardPaths.AppDataLocation) + "/PDF_Bunny/plugins"
 #PLUGIN_DIR =  os.path.dirname(__file__) + "/plugins"
 
 

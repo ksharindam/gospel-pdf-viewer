@@ -7,7 +7,7 @@ if [ ! -z "$DEBUG" ] ; then
   set -x
 fi
 
-BIN="usr/lib/gospel_pdf/gospel_pdf"
+BIN="usr/lib/pdf_bunny/pdf_bunny"
 
 
 if [ -z $APPDIR ] ; then

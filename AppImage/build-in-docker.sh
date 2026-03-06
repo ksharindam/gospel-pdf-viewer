@@ -62,6 +62,6 @@ mv linuxdeploy*AppImage /usr/bin/linuxdeploy
 
 bash -eux /source/AppImage/appimage_gen.sh
 
-chown "$OUT_UID" Gospel_PDF*.AppImage
+chown "$OUT_UID" PDF_Bunny*.AppImage
 
 EOF

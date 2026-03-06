@@ -1,9 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
-# usage : pyinstaller gospel_pdf.spec
+# usage : pyinstaller pdf_bunny.spec
 
 a = Analysis(
-    ['../gospel_pdf/main.py'],
-    pathex=['../gospel_pdf'],
+    ['../pdf_bunny/main.py'],
+    pathex=['../pdf_bunny'],
     binaries=[],
     datas=[],
     hiddenimports=['PyQt5.QtXml'],# required by PopplerQt5
@@ -19,7 +19,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='gospel_pdf',
+    name='pdf_bunny',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -30,7 +30,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="../data/gospel-pdf.ico",
+    icon="../data/pdf-bunny.ico",
     version='version_info.txt',
 )
 coll = COLLECT(
@@ -40,5 +40,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='gospel_pdf',
+    name='pdf_bunny',
 )

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Name = Gospel PDF Viewer
-Package Name = gospel-pdf
-Debian Dependency = python3-pyqt5, python3-poppler-qt5 or pymupdf
+Name = PDF Bunny
+Package Name = pdf-bunny
+Dependency = python3-pyqt5, python3-poppler-qt5 or pymupdf
 
 Description = A poppler or pymupdf based PDF viewer written in PyQt
 

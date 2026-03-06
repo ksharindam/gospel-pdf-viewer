@@ -1,10 +1,10 @@
-![License](https://img.shields.io/github/license/ksharindam/gospel-pdf-viewer)
-![Release](https://img.shields.io/github/v/release/ksharindam/gospel-pdf-viewer)
-![Release Date](https://img.shields.io/github/release-date/ksharindam/gospel-pdf-viewer)
-![Downloads Total](https://img.shields.io/github/downloads/ksharindam/gospel-pdf-viewer/total)
-![Downloads Latest](https://img.shields.io/github/downloads/ksharindam/gospel-pdf-viewer/latest/total)
+![License](https://img.shields.io/github/license/ksharindam/pdf-bunny)
+![Release](https://img.shields.io/github/v/release/ksharindam/pdf-bunny)
+![Release Date](https://img.shields.io/github/release-date/ksharindam/pdf-bunny)
+![Downloads Total](https://img.shields.io/github/downloads/ksharindam/pdf-bunny/total)
+![Downloads Latest](https://img.shields.io/github/downloads/ksharindam/pdf-bunny/latest/total)
 
-# Gospel Pdf Viewer
+# PDF Bunny
 Simple yet powerful pdf viewer for Windows and Linux  
 
 ### Description
@@ -12,7 +12,7 @@ This program is aimed at short startup time, with all generally used features.
 This is a evince or qpdfview alternative for linux users.
 
 ### Download
-Download the precompiled packages from [releases page](https://github.com/ksharindam/gospel-pdf-viewer/releases).  
+Download the precompiled packages from [releases page](https://github.com/ksharindam/pdf-bunny/releases).  
 For Windows download .exe package and install it.  
 For Linux download .AppImage package, mark it executable, and double click to run.  
 
@@ -32,7 +32,7 @@ or
 
 
 To uninstall run..  
-`sudo pip3 uninstall gospel-pdf`  
+`sudo pip3 uninstall pdf-bunny`  
 
 ### Screenshots
 

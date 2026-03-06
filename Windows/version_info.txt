@@ -21,10 +21,10 @@ VSVersionInfo(
       [
       StringTable(
         '040904b0',
-        [StringStruct('FileDescription', 'Gospel PDF Viewer'),
+        [StringStruct('FileDescription', 'PDF Bunny'),
         StringStruct('FileVersion', '3.4.0'),
-        StringStruct('LegalCopyright', 'Arindam Chaudhuri <ksharindam@gmail.com>'),
-        StringStruct('ProductName', 'Gospel Pdf Viewer'),
+        StringStruct('LegalCopyright', 'Arindam Chaudhuri <arindamsoft94@gmail.com>'),
+        StringStruct('ProductName', 'PDF Bunny'),
         StringStruct('ProductVersion', '3.4.0')]),
 		StringStruct('CompanyName', 'Arindamsoft')
       ]), 

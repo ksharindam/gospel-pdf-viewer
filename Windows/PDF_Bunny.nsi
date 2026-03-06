@@ -1,9 +1,9 @@
 ; HM NIS Edit Wizard helper defines
-!define PROG_NAME "Gospel Pdf Viewer"
+!define PROG_NAME "PDF Bunny"
 !define PROG_VERSION "3.4.0"
 !define PROG_PUBLISHER "Arindamsoft"
-!define PROG_ICON "gospel-pdf.ico"
-!define PROG_EXEC "GospelPdf.exe"
+!define PROG_ICON "pdf-bunny.ico"
+!define PROG_EXEC "pdf_bunny.exe"
 
 !define PRODUCT_DIR_REGKEY "Software\${PROG_NAME}"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PROG_NAME}"
@@ -12,7 +12,7 @@
 Name "${PROG_NAME}"
 OutFile "${PROG_NAME}-${PROG_VERSION}.exe"
 ; InstallDir must not have space
-InstallDir "$PROGRAMFILES64\GospelPdfViewer"
+InstallDir "$PROGRAMFILES64\PDF_Bunny"
 ; Get previous install directory if already installed
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 SetCompressor lzma
@@ -54,16 +54,16 @@ FunctionEnd
 ; This shows version info in installer, VIFileVersion and VIProductVersion must be in x.x.x.x format
 VIProductVersion "${PROG_VERSION}.0"
 VIFileVersion "${PROG_VERSION}.0"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "Gospel Pdf Viewer"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "Gospel Pdf Viewer"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "PDF Bunny"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "PDF Bunny"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Arindamsoft"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PROG_VERSION}.0"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Arindam Chaudhuri <arindamsoft94@gmail.com>"
 
 
-!define BUILDDIR      "dist\gospel_pdf"
-!define QTBIN_DIR     "dist\gospel_pdf\_internal\PyQt5\Qt5\bin"
-!define QTPLUGINS_DIR "dist\gospel_pdf\_internal\PyQt5\Qt5\plugins"
+!define BUILDDIR      "dist\pdf_bunny"
+!define QTBIN_DIR     "dist\pdf_bunny\_internal\PyQt5\Qt5\bin"
+!define QTPLUGINS_DIR "dist\pdf_bunny\_internal\PyQt5\Qt5\plugins"
 
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"

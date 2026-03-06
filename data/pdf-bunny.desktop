@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=Gospel PDF
+Name=PDF Bunny
 Comment=Simple PDF Viewer
-Exec=gospel_pdf %f
-Icon=gospel-pdf
+Exec=pdf_bunny %f
+Icon=pdf-bunny
 Categories= Office;
 MimeType=application/pdf;
 Terminal=false

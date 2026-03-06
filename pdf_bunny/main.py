@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# This file is a part of GospelPdfViewer Program which is GNU GPLv3 licensed
+# This file is a part of PDF Bunny Program which is GNU GPLv3 licensed
 # Copyright (C) 2017-2026 Arindam Chaudhuri <ksharindam@gmail.com>
 
 import sys, os
@@ -288,7 +288,7 @@ class Window(QMainWindow, Ui_window):
         self.statusbar.hide()
         # Impoort settings
         desktop = QApplication.desktop()
-        self.settings = QSettings("gospel-pdf", "main", self)
+        self.settings = QSettings("pdf-bunny", "main", self)
         # QSettings.value() function returns None if previously saved value
         # was empty list. In that case adding "or []" avoids crash.
         self.recent_files = self.settings.value("RecentFiles", []) or []
@@ -391,7 +391,7 @@ class Window(QMainWindow, Ui_window):
             self.attachAction.setVisible(True)
         self.pageNoLabel.setText('<b>%i/%i</b>' % (self.curr_page_no, self.pages_count) )
         self.gotoPageValidator.setTop(self.pages_count)
-        self.setWindowTitle(os.path.basename(App.filename)+ " - Gospel PDF " + __version__)
+        self.setWindowTitle(os.path.basename(App.filename)+ " - PDF Bunny " + __version__)
         # load pages
         self.addPages()
         self.jumpToPage(self.curr_page_no)
@@ -908,13 +908,13 @@ class Window(QMainWindow, Ui_window):
             self.recent_files.insert(0, filename)
 
     def showAbout(self):
-        lines = ("<h1>Gospel Pdf Viewer</h1>",
+        lines = ("<h1>PDF Bunny</h1>",
             "A Fast Simple Pdf Viewer using PyMupdf or Poppler<br><br>",
             "Version : %s<br>" % __version__,
             "Qt : %s<br>" % qVersion(),
             "%s : %s<br>" % (backend, backend_version),
             "Copyright &copy; %s %s &lt;%s&gt;" % (COPYRIGHT_YEAR, AUTHOR_NAME, AUTHOR_EMAIL))
-        QMessageBox.about(self, "About Gospel Pdf Viewer", "".join(lines))
+        QMessageBox.about(self, "About PDF Bunny", "".join(lines))
 
     def closeEvent(self, ev):
         """ Save all settings on window close """

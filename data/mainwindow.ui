@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Gospel PDF Viewer</string>
+   <string>PDF Bunny</string>
   </property>
   <property name="windowIcon">
    <iconset resource="resources.qrc">

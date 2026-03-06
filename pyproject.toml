@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 requires = ["setuptools"]
 
 [tool.setuptools.dynamic]
-version = {attr = "gospel_pdf.__version__"}
+version = {attr = "pdf_bunny.__version__"}
 
 [project]
-name = "gospel-pdf"
+name = "pdf-bunny"
 authors = [
     {name = "Arindam Chaudhuri", email = "ksharindam@gmail.com"},
 ]
@@ -17,4 +17,4 @@ requires-python = ">=3.8"
 dynamic = ["version"]
 
 [project.gui-scripts]
-gospel_pdf = "gospel_pdf.main:main"
+pdf_bunny = "pdf_bunny.main:main"
