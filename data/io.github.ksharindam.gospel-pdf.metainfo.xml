@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (C) 2023 Arindam Chaudhuri <ksharindam@gmail.com> -->
+<!-- Copyright (C) 2023-2026 Arindam Chaudhuri <ksharindam@gmail.com> -->
 <component type="desktop-application">
-  <id>com.ksharindam.gospel-pdf</id>
+  <id>io.github.ksharindam.gospel-pdf</id>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
+  <developer id="io.github.ksharindam">
+    <name>Arindam Chaudhuri</name>
+  </developer>
 
   <name>Gospel Pdf Viewer</name>
   <summary>A fast, simple Pdf Viewer</summary>
-
   <description>
     <p>
       A fast pdf viewer based on Poppler or MuPdf.
@@ -18,7 +20,24 @@
     <category>Office</category>
   </categories>
 
-  <launchable type="desktop-id">com.ksharindam.gospel-pdf.desktop</launchable>
+  <launchable type="desktop-id">io.github.ksharindam.gospel-pdf.desktop</launchable>
+  <url type="homepage">https://ksharindam.github.io/gospel-pdf-viewer/</url>
+  <content_rating type="oars-1.0" />
+
+  <branding>
+    <color type="primary" scheme_preference="light">#f5f5b4</color>
+    <color type="primary" scheme_preference="dark">#757500</color>
+  </branding>
+
+  <releases>
+    <release version="3.2.0" date="2024-09-09">
+      <description>
+        <ul>
+          <li>Added native printing support.</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
 
   <screenshots>
     <screenshot type="default">
@@ -35,6 +54,5 @@
       </screenshot>
     </screenshots>
 
-  <url type="homepage">https://ksharindam.github.io/gospel-pdf-viewer/</url>
 
 </component>

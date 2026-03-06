@@ -2,13 +2,12 @@
 # usage : pyinstaller gospel_pdf.spec
 
 a = Analysis(
-    ['../gospel_pdf.py'],
+    ['../gospel_pdf/main.py'],
     pathex=['../gospel_pdf'],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=['PyQt5.QtXml'],# required by PopplerQt5
     hookspath=[],
-    hooksconfig={},
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
@@ -20,7 +19,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='GospelPdf',
+    name='gospel_pdf',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
