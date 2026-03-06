@@ -1,0 +1,11 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pdf-bunny
+Upstream-Contact: arindamsoft94@gmail.com
+Source: https://github.com/ksharindam/pdf-bunny
+Comment:
+ Most files in this package are licensed under the GNU General Public License.
+
+Files: *
+Copyright:
+  2017-2026, Arindam Chaudhuri <arindamsoft94@gmail.com>
+License: GPL-3.0

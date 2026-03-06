@@ -1,0 +1,24 @@
+Source: pdf-bunny
+Section: utils
+Priority: optional
+Maintainer: Arindam Chaudhuri <arindamsoft94@gmail.com>
+Homepage: https://github.com/ksharindam
+Standards-Version: 4.7.0
+X-Python3-Version: >= 3.8
+Build-Depends:
+ debhelper (>= 10),
+ python3,
+
+Package: pdf-bunny
+Architecture: all
+Depends:
+ python3-pyqt5, python3-poppler-qt5,
+ ${misc:Depends},
+ ${python3:Depends}
+Description: Simple, fast Pdf viewer
+ A simple and fast pdf viewer with all necessary features.
+  * Save page as image
+  * Presentation mode view.
+  * Encrypt and decrypt pdf using qpdf (needs qpdf)
+  * Plugin support
+

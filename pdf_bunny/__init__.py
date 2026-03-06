@@ -7,7 +7,7 @@ Dependency = python3-pyqt5, python3-poppler-qt5 or pymupdf
 Description = A poppler or pymupdf based PDF viewer written in PyQt
 
 ...........................................................................
-|   Copyright (C) 2017-2026 Arindam Chaudhuri <arindamsoft94@gmail.com>       |
+|   Copyright (C) 2017-2026 Arindam Chaudhuri <arindamsoft94@gmail.com>    |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
