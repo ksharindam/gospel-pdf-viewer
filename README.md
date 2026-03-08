@@ -12,6 +12,12 @@ This program is aimed at short startup time, with all generally used features.
 This is a evince or qpdfview alternative for linux users.
 
 ### Download
+
+|    Windows    |    AArch64    |    AppImage   |     Debian    |  
+| ------------- | ------------- | ------------- | ------------- |  
+| ![EXE](https://github.com/ksharindam/chemcanvas-data/raw/main/icons/windows.png) | ![AArch64](https://github.com/ksharindam/chemcanvas-data/raw/main/icons/raspberry-pi.png) | ![AppImage](https://github.com/ksharindam/chemcanvas-data/raw/main/icons/appimage.png)  | ![debian](https://github.com/ksharindam/chemcanvas-data/raw/main/icons/debian.png)  |  
+| [Download](https://github.com/ksharindam/pdf-bunny/releases/latest/download/PDF_Bunny.exe) | [Download](https://github.com/ksharindam/pdf-bunny/releases/latest/download/PDF_Bunny-aarch64.AppImage) | [Download](https://github.com/ksharindam/pdf-bunny/releases/latest/download/PDF_Bunny-x86_64.AppImage)  | [Download](https://github.com/ksharindam/pdf-bunny/releases/latest/download/pdf-bunny_all.deb)  |  
+
 Download the precompiled packages from [releases page](https://github.com/ksharindam/pdf-bunny/releases).  
 For Windows download .exe package and install it.  
 For Linux download .AppImage package, mark it executable, and double click to run.  
