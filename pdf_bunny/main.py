@@ -291,11 +291,15 @@ class Window(QMainWindow, Ui_window):
         self.settings = QSettings("pdf-bunny", "main", self)
         # QSettings.value() function returns None if previously saved value
         # was empty list. In that case adding "or []" avoids crash.
-        self.recent_files = self.settings.value("RecentFiles", []) or []
-        self.history_filenames = self.settings.value("HistoryFileNameList", []) or []
-        self.history_page_no = self.settings.value("HistoryPageNoList", []) or []
+        self.file_history = {}# <filename : page_no> dictionary
+        size = self.settings.beginReadArray("FileHistory")
+        for i in range(size):
+            self.settings.setArrayIndex(i)
+            filename = self.settings.value("Filename")
+            self.file_history[filename] = self.settings.value("PageNo")
+        self.settings.endArray()
         self.available_area = [desktop.availableGeometry().width(), desktop.availableGeometry().height()]
-        self.zoomLevelCombo.setCurrentIndex(int(self.settings.value("ZoomLevel", 2)))
+        self.zoomLevelCombo.setCurrentIndex(int(self.settings.value("ZoomLevel", 0)))
         # Connect Signals
         self.scrollArea.verticalScrollBar().valueChanged.connect(self.onPageScroll)
         self.findTextEdit.returnPressed.connect(self.findNext)
@@ -313,12 +317,11 @@ class Window(QMainWindow, Ui_window):
         self.presentation_mode = False
         self.is_maximized = False # state before entering presentation mode
         self.outlines_visible = False
-        self.recent_files_actions = []
         self.updateRecentFilesMenu()
         QDir.setCurrent(QDir.homePath())
         # Show Window
         width = int(self.settings.value("WindowWidth", 1040))
-        height = int(self.settings.value("WindowHeight", 717))
+        height = int(self.settings.value("WindowHeight", 640))
         self.resize(width, height)
         self.show()
         loadPlugins(App)
@@ -326,30 +329,28 @@ class Window(QMainWindow, Ui_window):
             self.pluginsMenu.menuAction().setVisible(False)
 
     def updateRecentFilesMenu(self):
-        self.recent_files_actions[:] = [] # pythonic way to clear list
         self.recentFilesMenu.clear()
-        for each in self.recent_files:
-            name = elideMiddle(os.path.basename(each), 60)
+        recent_files = list(self.file_history.keys())[-10:]
+        for filename in reversed(recent_files):
+            name = elideMiddle(os.path.basename(filename), 60)
             action = self.recentFilesMenu.addAction(name, self.openRecentFile)
-            self.recent_files_actions.append(action)
+            action.filename = filename
         self.recentFilesMenu.addSeparator()
         self.recentFilesMenu.addAction(QIcon(':/icons/edit-clear.png'), 'Clear Recents', self.clearRecents)
 
     def openRecentFile(self):
         action = self.sender()
-        index = self.recent_files_actions.index(action)
-        self.loadPDFfile(self.recent_files[index])
+        self.loadPDFfile(action.filename)
 
     def clearRecents(self):
-        self.recent_files_actions[:] = []
         self.recentFilesMenu.clear()
-        self.recent_files[:] = []
+        self.file_history.clear()
+        self.settings.remove("FileHistory")
 
     def removeOldDoc(self):
         if not App.doc:
             return
-        # Save current page number
-        self.saveFileData()
+        self.updateFileHistory()
         self.removeAllPages()
         self.attachAction.setVisible(False)
         self.jumped_from = None
@@ -383,9 +384,9 @@ class Window(QMainWindow, Ui_window):
         self.getOutlines()
         # Load Document in other threads
         self.loadFileRequested.emit(App.filename, password)
-        if collapseUser(App.filename) in self.history_filenames:
-            self.curr_page_no = int(self.history_page_no[self.history_filenames.index(collapseUser(App.filename))])
-        self.curr_page_no = min(self.curr_page_no, self.pages_count)
+        if collapseUser(filename) in self.file_history:
+            page_no = int(self.file_history[collapseUser(filename)])
+            self.curr_page_no = min(page_no, self.pages_count)
         # Show/Add widgets
         if App.doc.hasEmbeddedFiles():
             self.attachAction.setVisible(True)
@@ -713,6 +714,7 @@ class Window(QMainWindow, Ui_window):
 
     def jumpToPage(self, page_num, top=0.0):
         """ scrolls to a particular page and position """
+        print("jump", page_num)
         if page_num < 1: page_num = 1
         elif page_num > self.pages_count: page_num = self.pages_count
         self.jumped_from = self.curr_page_no
@@ -898,33 +900,29 @@ class Window(QMainWindow, Ui_window):
 
     def resizeEvent(self, ev):
         QMainWindow.resizeEvent(self, ev)
-        if App.filename == '' : return
-        if self.zoomLevelCombo.currentIndex() == 0:
-            self.resize_page_timer.start(200)
+        # prevents page resize trigger on program startup
+        if not App.filename or self.presentation_mode:
+            return
+        self.resize_page_timer.start(200)
 
     def onWindowResize(self):
-        if self.presentation_mode:
-            return
-        App.manager.clear_cache()# remove old rendered images
-        self.calculatePageDpis()
-        self.resizePages()
-        self.jumpToPage(self.curr_page_no)
+        if self.zoomLevelCombo.currentIndex() == 0:
+            App.manager.clear_cache()# remove old rendered images
+            self.calculatePageDpis()
+            self.resizePages()
+            self.jumpToPage(self.curr_page_no)
         if not self.isMaximized():
             self.settings.setValue("WindowWidth", self.width())
             self.settings.setValue("WindowHeight", self.height())
 
-    def saveFileData(self):
-        if App.filename != '':
-            filename = collapseUser(App.filename)
-            if filename in self.history_filenames:
-                index = self.history_filenames.index(filename)
-                self.history_page_no[index] = self.curr_page_no
-            else:
-                self.history_filenames.insert(0, filename)
-                self.history_page_no.insert(0, self.curr_page_no)
-            if filename in self.recent_files:
-                self.recent_files.remove(filename)
-            self.recent_files.insert(0, filename)
+    def updateFileHistory(self):
+        if not App.filename:
+            return
+        filename = collapseUser(App.filename)
+        if filename in self.file_history:
+            self.file_history.pop(filename)# remove so that new entry adds to the end
+        self.file_history[filename] = self.curr_page_no
+
 
     def showAbout(self):
         lines = ("<h1>PDF Bunny</h1>",
@@ -937,11 +935,14 @@ class Window(QMainWindow, Ui_window):
 
     def closeEvent(self, ev):
         """ Save all settings on window close """
-        self.saveFileData()
+        self.updateFileHistory()
         self.settings.setValue("ZoomLevel", self.zoomLevelCombo.currentIndex())
-        self.settings.setValue("HistoryFileNameList", self.history_filenames[:100])
-        self.settings.setValue("HistoryPageNoList", self.history_page_no[:100])
-        self.settings.setValue("RecentFiles", self.recent_files[:10])
+        self.settings.beginWriteArray("FileHistory")
+        for i,filename in enumerate( list(self.file_history.keys())[-100:] ):
+            self.settings.setArrayIndex(i)
+            self.settings.setValue("Filename", filename)
+            self.settings.setValue("PageNo", self.file_history[filename])
+        self.settings.endArray()
         return QMainWindow.closeEvent(self, ev)
 
     def onAppQuit(self):
