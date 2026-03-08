@@ -37,7 +37,7 @@
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: #b8b8b8;</string>
+        <string notr="true">QWidget {background-color: #efefef;}</string>
        </property>
        <layout class="QHBoxLayout" name="scrollLayout">
         <property name="margin">

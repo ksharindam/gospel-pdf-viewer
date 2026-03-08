@@ -393,8 +393,12 @@ class Window(QMainWindow, Ui_window):
         self.gotoPageValidator.setTop(self.pages_count)
         self.setWindowTitle(os.path.basename(App.filename)+ " - PDF Bunny " + __version__)
         # load pages
+        self.calculatePageDpis()
+        self.renderCurrentPage()# render current page while pages are being resized
         self.addPages()
-        self.jumpToPage(self.curr_page_no)
+        self.resizePages()
+        if self.curr_page_no!=1:
+            self.jumpToPage(self.curr_page_no)
         self.fileOpened.emit(App.filename)
 
     def onNewPageRendered(self, page_no, image):
@@ -402,17 +406,20 @@ class Window(QMainWindow, Ui_window):
             if page_no == self.curr_page_no:
                 self.pages[0].setImage(image)
             return
-        links = App.doc.pageLinkAnnotations(page_no)
-        self.pages[page_no-1].setImage(image, links)
+        # though i have never seen, when loading file
+        # the page may be rendered before adding pages.
+        if page_no<=len(self.pages):
+            links = App.doc.pageLinkAnnotations(page_no)
+            self.pages[page_no-1].setImage(image, links)
 
     def clearPageImage(self, page_no):
-        """ To save memory, set a blank image """
+        """ To save memory, clear pixmap """
         if self.presentation_mode:
             return
         self.pages[page_no-1].clear()
 
     def renderCurrentPage(self):
-        """ Requests to render current page """
+        """ Requests manager to render current page """
         App.manager.set_current_page_no(self.curr_page_no)
 
     def onPageScroll(self, pos):
@@ -420,13 +427,15 @@ class Window(QMainWindow, Ui_window):
             Get the current page number on scrolling, then requests to render"""
         if not self.render_on_scroll:
             return
-        child = self.frame.childAt(int(self.frame.width()/2), int(pos))
-        if child not in self.pages:
-            return
-        index = self.pages.index(child)
-        self.pageNoLabel.setText('<b>%i/%i</b>' % (index+1, self.pages_count) )
-        self.curr_page_no = index+1
-        self.renderCurrentPage()
+        # we have to also check little lower to avoid page spacings
+        for dy in (0,20):
+            child = self.frame.childAt(int(self.frame.width()/2), int(pos)+dy)
+            if isinstance(child,PageWidget):
+                index = self.pages.index(child)
+                self.pageNoLabel.setText('<b>%i/%i</b>' % (index+1, self.pages_count) )
+                self.curr_page_no = index+1
+                self.renderCurrentPage()
+                break
 
     def addPages(self):
         self.render_on_scroll = False
@@ -437,32 +446,39 @@ class Window(QMainWindow, Ui_window):
             page = PageWidget(page_no, self.frame)
             self.frame.pageLayout.addWidget(page, 0, Qt.AlignCenter)
             self.pages.append(page)
-        self.resizePages()
         self.render_on_scroll = True
 
     def removeAllPages(self):
+        App.manager.clear_cache()# remove old rendered images
+        App.page_dpis.clear()
         while self.pages:
             page = self.pages.pop()
             self.frame.pageLayout.removeWidget(page)
             page.deleteLater()
         self.frame.deleteLater()
 
+    def calculatePageDpis(self):
+        if self.zoomLevelCombo.currentIndex() != 0:
+            percent_zoom = self.zoom_levels[self.zoomLevelCombo.currentIndex()]
+            dpi = int(SCREEN_DPI*percent_zoom/100)
+            for i in range(self.pages_count):
+                App.page_dpis[i+1] = dpi
+            return
+        # Fit width
+        wait(100) # get proper viewport width
+        fixed_width = self.scrollArea.viewport().width() - 30
+        for page_no in range(1, self.pages_count+1):
+            page_w, page_h = App.doc.pageSize(page_no) # width in points
+            App.page_dpis[page_no] = int(72.0*fixed_width/page_w)
+
     def resizePages(self):
         ''' Resize all pages according to zoom level '''
         self.render_on_scroll = False
-        App.manager.clear_cache()# remove old rendered images
-        page_dpi = self.zoom_levels[self.zoomLevelCombo.currentIndex()]*SCREEN_DPI/100
-        wait(100) # get proper viewport width
-        fixed_width = self.scrollArea.viewport().width() - 30
         for i in range(self.pages_count):
-            pg_width, pg_height = App.doc.pageSize(i+1) # width in points
-            if self.zoomLevelCombo.currentIndex() == 0: # if Fit Width
-                dpi = int(72.0*fixed_width/pg_width)
-            else:
-                dpi = int(page_dpi)
+            page_w, page_h = App.doc.pageSize(i+1) # width in points
+            dpi = App.page_dpis[i+1]
             self.pages[i].dpi = dpi
-            self.pages[i].setFixedSize(int(round(pg_width*dpi/72)), int(round(pg_height*dpi/72)))
-            App.page_dpis[i+1] = dpi
+            self.pages[i].setFixedSize(int(round(page_w*dpi/72)), int(round(page_h*dpi/72)))
         # wait for resize to take effect
         wait(100)
         self.render_on_scroll = True
@@ -493,7 +509,6 @@ class Window(QMainWindow, Ui_window):
         self.pages.append(page)
         # wait for resize to take effect
         wait(100)
-        App.manager.clear_cache()
         max_w = self.scrollArea.viewport().width()
         max_h = self.scrollArea.viewport().height()
         page_no = self.curr_page_no
@@ -513,8 +528,8 @@ class Window(QMainWindow, Ui_window):
             self.showMaximized()
         else:
             self.showNormal()
-        self.scrollArea.setStyleSheet("QScrollArea { background-color: #b8b8b8; }")
-        self.scrollAreaWidgetContents.setStyleSheet("background-color: #b8b8b8;")
+        self.scrollArea.setStyleSheet("QScrollArea { background-color: #efefef; }")
+        self.scrollAreaWidgetContents.setStyleSheet("QWidget {background-color: #efefef;}")
         self.menubar.show()
         self.toolBar.show()
         if self.outlines_visible:
@@ -742,6 +757,8 @@ class Window(QMainWindow, Ui_window):
         """ Gets called when zoom level is changed"""
         scrollbar = self.scrollArea.verticalScrollBar()
         pos = scrollbar.value()/scrollbar.maximum()
+        App.manager.clear_cache()# remove old rendered images
+        self.calculatePageDpis()
         self.resizePages()
         scrollbar_pos = int(pos * scrollbar.maximum())
         scrollbar.setValue(scrollbar_pos)
@@ -888,6 +905,8 @@ class Window(QMainWindow, Ui_window):
     def onWindowResize(self):
         if self.presentation_mode:
             return
+        App.manager.clear_cache()# remove old rendered images
+        self.calculatePageDpis()
         self.resizePages()
         self.jumpToPage(self.curr_page_no)
         if not self.isMaximized():

@@ -30,10 +30,10 @@
   </branding>
 
   <releases>
-    <release version="3.2.0" date="2024-09-09">
+    <release version="3.4.0" date="2026-03-08">
       <description>
         <ul>
-          <li>Added native printing support.</li>
+          <li>Added Presentation Mode.</li>
         </ul>
       </description>
     </release>
