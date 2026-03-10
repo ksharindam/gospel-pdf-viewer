@@ -231,7 +231,7 @@ class Window(QMainWindow, Ui_window):
         self.docInfoAction.triggered.connect(self.docInfo)
         self.zoominAction.triggered.connect(self.zoomIn)
         self.zoomoutAction.triggered.connect(self.zoomOut)
-        self.presentationAction.triggered.connect(self.startPresentationMode)
+        self.presentationAction.triggered.connect(self.enterPresentationMode)
         self.undoJumpAction.triggered.connect(self.undoJump)
         self.prevPageAction.triggered.connect(self.goPrevPage)
         self.nextPageAction.triggered.connect(self.goNextPage)
@@ -315,15 +315,19 @@ class Window(QMainWindow, Ui_window):
         self.jumped_from = None
         self.copy_text_mode = False
         self.presentation_mode = False
-        self.is_maximized = False # state before entering presentation mode
+        self.first_file_opened = False # to prevent resize trigger on program startup
         self.outlines_visible = False
         self.updateRecentFilesMenu()
         QDir.setCurrent(QDir.homePath())
         # Show Window
         width = int(self.settings.value("WindowWidth", 1040))
         height = int(self.settings.value("WindowHeight", 640))
+        maximized = self.settings.value("WindowMaximized", "false")=="true"
         self.resize(width, height)
-        self.show()
+        if maximized:
+            self.showMaximized()
+        else:
+            self.show()
         loadPlugins(App)
         if not App.plugins:
             self.pluginsMenu.menuAction().setVisible(False)
@@ -394,12 +398,8 @@ class Window(QMainWindow, Ui_window):
         self.gotoPageValidator.setTop(self.pages_count)
         self.setWindowTitle(os.path.basename(App.filename)+ " - PDF Bunny " + __version__)
         # load pages
-        self.calculatePageDpis()
-        self.renderCurrentPage()# render current page while pages are being resized
         self.addPages()
-        self.resizePages()
-        if self.curr_page_no!=1:
-            self.jumpToPage(self.curr_page_no)
+        self.first_file_opened = True
         self.fileOpened.emit(App.filename)
 
     def onNewPageRendered(self, page_no, image):
@@ -439,6 +439,10 @@ class Window(QMainWindow, Ui_window):
                 break
 
     def addPages(self):
+        """ add pages for normal mode """
+        self.calculatePageDpis()
+        self.renderCurrentPage()# render current page while pages are being resized
+        # add Pages
         self.render_on_scroll = False
         self.frame = Frame(self.scrollAreaWidgetContents, self.scrollArea)
         self.scrollLayout.addWidget(self.frame)
@@ -448,6 +452,9 @@ class Window(QMainWindow, Ui_window):
             self.frame.pageLayout.addWidget(page, 0, Qt.AlignCenter)
             self.pages.append(page)
         self.render_on_scroll = True
+        self.resizePages()
+        if self.curr_page_no!=1:
+            self.jumpToPage(self.curr_page_no)
 
     def removeAllPages(self):
         App.manager.clear_cache()# remove old rendered images
@@ -485,13 +492,13 @@ class Window(QMainWindow, Ui_window):
         self.render_on_scroll = True
 
 
-    def startPresentationMode(self):
+    def enterPresentationMode(self):
         """ show fullscreen with black background """
         if self.presentation_mode:
             return
         self.scrollArea.setStyleSheet("QScrollArea { background-color:black; }")
         self.scrollAreaWidgetContents.setStyleSheet("background-color: black;")
-        self.is_maximized = self.isMaximized()
+        self.window_state = self.windowState(), self.saveState()
         self.outlines_visible = self.dockWidget.isVisible()
         self.showFullScreen()
         self.toolBar.hide()
@@ -525,19 +532,13 @@ class Window(QMainWindow, Ui_window):
         if not self.presentation_mode:
             return
         self.removeAllPages()
-        if self.is_maximized:
-            self.showMaximized()
-        else:
-            self.showNormal()
+        self.setWindowState(self.window_state[0])# restores normal or maximized state
+        self.restoreState(self.window_state[1])# restores menubar, toolbar and dockwidgets
         self.scrollArea.setStyleSheet("QScrollArea { background-color: #efefef; }")
         self.scrollAreaWidgetContents.setStyleSheet("QWidget {background-color: #efefef;}")
-        self.menubar.show()
-        self.toolBar.show()
-        if self.outlines_visible:
-            self.dockWidget.show()
-        self.presentation_mode = False
+        wait(50)# in this time, resizeEvent() is called
         self.render_on_scroll = True
-        wait(100)
+        self.presentation_mode = False
         self.addPages()
 
     def showCurrentSlide(self):
@@ -714,7 +715,6 @@ class Window(QMainWindow, Ui_window):
 
     def jumpToPage(self, page_num, top=0.0):
         """ scrolls to a particular page and position """
-        print("jump", page_num)
         if page_num < 1: page_num = 1
         elif page_num > self.pages_count: page_num = self.pages_count
         self.jumped_from = self.curr_page_no
@@ -726,7 +726,10 @@ class Window(QMainWindow, Ui_window):
         if not (0 < top < self.pages[page_num-1].height()): top = 0
         scrollbar_pos = self.pages[page_num-1].pos().y()
         scrollbar_pos += top
-        self.scrollArea.verticalScrollBar().setValue(int(scrollbar_pos))
+        if int(scrollbar_pos) != self.scrollArea.verticalScrollBar().value():
+            self.scrollArea.verticalScrollBar().setValue(int(scrollbar_pos))
+        else:# when scrollbar value does not change
+            self.renderCurrentPage()
 
     def undoJump(self):
         if self.jumped_from == None: return
@@ -758,12 +761,15 @@ class Window(QMainWindow, Ui_window):
     def setZoom(self, index):
         """ Gets called when zoom level is changed"""
         scrollbar = self.scrollArea.verticalScrollBar()
-        pos = scrollbar.value()/scrollbar.maximum()
+        rel_pos = scrollbar.value()/scrollbar.maximum() if scrollbar.maximum() else 0
         App.manager.clear_cache()# remove old rendered images
         self.calculatePageDpis()
         self.resizePages()
-        scrollbar_pos = int(pos * scrollbar.maximum())
-        scrollbar.setValue(scrollbar_pos)
+        new_pos = int(rel_pos * scrollbar.maximum())
+        if scrollbar.value()!=new_pos:
+            scrollbar.setValue(new_pos)# renders current page
+        else:
+            self.renderCurrentPage()
 
     def zoomIn(self):
         index = self.zoomLevelCombo.currentIndex()
@@ -899,9 +905,11 @@ class Window(QMainWindow, Ui_window):
         QMessageBox.warning(self, title, text)
 
     def resizeEvent(self, ev):
+        # if program starts at maximized window, this event is called twice
         QMainWindow.resizeEvent(self, ev)
         # prevents page resize trigger on program startup
-        if not App.filename or self.presentation_mode:
+        # also handles both enter and exiting presentation mode
+        if not self.first_file_opened or self.presentation_mode:
             return
         self.resize_page_timer.start(200)
 
@@ -935,6 +943,7 @@ class Window(QMainWindow, Ui_window):
 
     def closeEvent(self, ev):
         """ Save all settings on window close """
+        self.settings.setValue("WindowMaximized", self.isMaximized())
         self.updateFileHistory()
         self.settings.setValue("ZoomLevel", self.zoomLevelCombo.currentIndex())
         self.settings.beginWriteArray("FileHistory")
