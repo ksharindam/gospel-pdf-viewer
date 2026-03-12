@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PROG_NAME "PDF Bunny"
-!define PROG_VERSION "3.4.0"
+!define PROG_VERSION "3.4.1"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "pdf-bunny.ico"
 !define PROG_EXEC "pdf_bunny.exe"

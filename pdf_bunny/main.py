@@ -197,6 +197,7 @@ class Window(QMainWindow, Ui_window):
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
         self.setupUi(self)
+        self.setWindowTitle("PDF Bunny - " + __version__)
         self.dockSearch.hide()
         self.dockWidget.hide()
         self.dockWidget.setMinimumWidth(310)

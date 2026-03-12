@@ -29,16 +29,6 @@
     <color type="primary" scheme_preference="dark">#757500</color>
   </branding>
 
-  <releases>
-    <release version="3.4.0" date="2026-03-08">
-      <description>
-        <ul>
-          <li>Added Presentation Mode.</li>
-        </ul>
-      </description>
-    </release>
-  </releases>
-
   <screenshots>
     <screenshot type="default">
         <caption>Screenshot 1</caption>
