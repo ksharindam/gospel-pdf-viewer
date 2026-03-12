@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QFrame, QAction,
     QVBoxLayout, QGridLayout,
     QLabel, QMessageBox, QSystemTrayIcon,
-    QLineEdit, QComboBox, QRadioButton,
+    QLineEdit, QComboBox, QRadioButton, QHeaderView,
     QDialog, QFileDialog, QInputDialog,
 )
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
@@ -853,8 +853,8 @@ class Window(QMainWindow, Ui_window):
             return
         self.dockWidget.show()
         outline_model = QStandardItemModel(self)
-        parent_item = outline_model.invisibleRootItem()
-        parent_items = [parent_item]
+        root_item = outline_model.invisibleRootItem()
+        parent_items = [root_item]
 
         for level,title,page_no,top in toc:
             parent_item = parent_items[level-1]
@@ -863,23 +863,23 @@ class Window(QMainWindow, Ui_window):
                 item.setData(page_no, Qt.UserRole + 1)
                 item.setData(top, Qt.UserRole + 2)
 
-                pageItem = item.clone()
-                pageItem.setText(str(page_no))
+                pageItem = QStandardItem(str(page_no))
                 pageItem.setTextAlignment(Qt.AlignRight)
                 parent_item.appendRow([item, pageItem])
             else:
-                parent_item.appendRow([item])
+                # without this empty second item, sometimes page_no column is not visible
+                parent_item.appendRow([item, QStandardItem("")])
 
             while len(parent_items)!=level:
                 parent_items.pop()
             parent_items.append(item)
 
         self.treeView.setModel(outline_model)
-        if parent_item.rowCount() < 4:
+        if root_item.rowCount() < 4:
             self.treeView.expandToDepth(0)
         self.treeView.setHeaderHidden(True)
-        self.treeView.header().setSectionResizeMode(0, 1)
-        self.treeView.header().setSectionResizeMode(1, 3)
+        self.treeView.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.treeView.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.treeView.header().setStretchLastSection(False)
 
     def onOutlineClick(self, m_index):
