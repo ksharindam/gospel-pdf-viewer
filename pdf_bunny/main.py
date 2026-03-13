@@ -317,7 +317,6 @@ class Window(QMainWindow, Ui_window):
         self.copy_text_mode = False
         self.presentation_mode = False
         self.first_file_opened = False # to prevent resize trigger on program startup
-        self.outlines_visible = False
         self.updateRecentFilesMenu()
         QDir.setCurrent(QDir.homePath())
         # Show Window
@@ -500,13 +499,12 @@ class Window(QMainWindow, Ui_window):
         self.scrollArea.setStyleSheet("QScrollArea { background-color:black; }")
         self.scrollAreaWidgetContents.setStyleSheet("background-color: black;")
         self.window_state = self.windowState(), self.saveState()
-        self.outlines_visible = self.dockWidget.isVisible()
+        self.presentation_mode = True
+        self.render_on_scroll = False
         self.showFullScreen()
         self.toolBar.hide()
         self.menubar.hide()
         self.dockWidget.hide()
-        self.presentation_mode = True
-        self.render_on_scroll = False
         # Remove all pages
         self.removeAllPages()
         # in presentation mode, we need to add only one page
